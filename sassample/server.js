@@ -32,7 +32,10 @@ var studentsSchema = mongoose.Schema(
     province: {type: mongoose.Schema.ObjectId, ref: 'ProvinceModel'},
     city: {type: mongoose.Schema.ObjectId, ref: 'CityModel'},
     academicload: {type: mongoose.Schema.ObjectId, ref: 'AcademicloadModel'},
-    grades: [{type: mongoose.Schema.ObjectId, ref: ('GradeModel')}]
+    grades: [{type: mongoose.Schema.ObjectId, ref: ('GradeModel')}],
+    // Added by MM @ 3:10PM
+    distributionresults: [{type: mongoose.Schema.ObjectId, ref: ('DistributionresultModel')}]
+    // End add
 }
 );
 var residencySchema = mongoose.Schema(
@@ -115,6 +118,24 @@ var termcodeSchema = mongoose.Schema(
     programrecords: [{type: mongoose.Schema.ObjectId, ref: ('ProgramrecordModel')}]
 }
 );
+// Added by MM @ 2:43PM
+var distributionresultSchema = mongoose.Schema(
+{
+    date: String,
+    student: {type: mongoose.Schema.ObjectId, ref: 'StudentsModel'},
+    commentcodes: [{type: mongoose.Schema.ObjectId, ref: ('CommentcodeModel')}]
+}
+);
+var commentcodeSchema = mongoose.Schema(
+{
+    code: String,
+    progAction: String,
+    description: String,
+    notes: String,
+    distributionresult: {type: mongoose.Schema.ObjectId, ref: 'DistributionresultModel'}
+}
+);
+// End add
 
 var StudentsModel = mongoose.model('student', studentsSchema);
 var ResidencyModel = mongoose.model('residency', residencySchema);
@@ -128,6 +149,10 @@ var CoursecodeModel = mongoose.model('coursecode', coursecodeSchema);
 var ProgramrecordModel = mongoose.model('programrecord', programrecordSchema);
 var DegreecodeModel = mongoose.model('degreecode', degreecodeSchema);
 var TermcodeModel = mongoose.model('termcode', termcodeSchema);
+// Added by MM @ 3:03
+var DistributionresultModel = mongoose.model('distributionresult', distributionresultSchema);
+var CommentcodeModel = mongoose.model('commentcode', commentcodeSchema);
+// End add
 
 app.route('/students')
 .post(function (request, response) {
@@ -353,6 +378,128 @@ app.route('/coursecodes/:coursecode_id')
     })
 });
 //end added - COURSECODES
+
+// Added DISTRIBUTIONRESULTS ROUTES @ 3:16PM MM
+app.route('/distributionresults')
+.post(function (request, response) {
+    var distributionresult = new DistributionresultModel(request.body.distributionresult);
+    distributionresult.save(function (error) {
+        if (error) response.send(error);
+        response.json({distributionresult: distributionresult});
+    });
+})
+.get(function (request, response) {
+    var Distributionresult = request.query.distributionresult;
+    if (!Distributionresult) {
+        DistributionresultModel.find(function (error, distributionresults) {
+            if (error) response.send(error);
+            response.json({distributionresult: distributionresults});
+        });
+    }
+});
+
+app.route('/distributionresults/:distributionresult_id')
+.get(function (request, response) {
+    DistributionresultModel.findById(request.params.distributionresult_id, function (error, distributionresult) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({distributionresult: distributionresult});
+        }
+    });
+})
+.put(function (request, response) {
+    DistributionresultModel.findById(request.params.distributionresult_id, function (error, distributionresult) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            distributionresult.date = request.body.distributionresult.date;
+            distributionresult.student = request.body.distributionresult.student;
+            distributionresult.commentcodes = request.body.distributionresult.commentcodes;
+
+            distributionresult.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({distributionresult: distributionresult});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    DistributionresultModel.findByIdAndRemove(request.params.distributionresult_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({distributionresult: deleted});
+            };
+        }
+        );
+});
+// End added - DISTRIBUTIONRESULTS
+
+// Added COMMENTCODE ROUTES @ 3:30PM MM
+app.route('/commentcodes')
+.post(function (request, response) {
+    var commentcode = new CommentcodeModel(request.body.commentcode);
+    commentcode.save(function (error) {
+        if (error) response.send(error);
+        response.json({commentcode: commentcode});
+    });
+})
+.get(function (request, response) {
+    var Commentcode = request.query.commentcode;
+    if (!Commentcode) {
+        CommentcodeModel.find(function (error, commentcodes) {
+            if (error) response.send(error);
+            response.json({commentcode: commentcodes});
+        });
+    }
+});
+
+app.route('/commentcodes/:commentcode_id')
+.get(function (request, response) {
+    CommentcodeModel.findById(request.params.commentcode_id, function (error, commentcode) {
+        if (error) response.send(error);
+        response.json({commentcode: commentcode});
+    })
+})
+.put(function (request, response) {
+    CommentcodeModel.findById(request.params.commentcode_id, function (error, commentcode) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            commentcode.code = request.body.commentcode.code;
+            commentcode.number = request.body.commentcode.number;
+            commentcode.name = request.body.commentcode.name;
+            commentcode.unit = request.body.commentcode.unit;
+            commentcode.grades = request.body.commentcode.grades;
+
+            commentcode.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({commentcode: commentcode});
+                }
+            });
+        }
+    })
+})
+.delete(function (request, response) {
+    CommentcodeModel.findByIdAndRemove(request.params.commentcode_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({commentcode: deleted});
+            };
+        }
+        );
+});
+// End add - COMMENTCODE
 
 app.route('/residencies')
 .post(function (request, response) {
