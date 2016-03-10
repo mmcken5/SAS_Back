@@ -33,9 +33,8 @@ var studentsSchema = mongoose.Schema(
     city: {type: mongoose.Schema.ObjectId, ref: 'CityModel'},
     academicload: {type: mongoose.Schema.ObjectId, ref: 'AcademicloadModel'},
     grades: [{type: mongoose.Schema.ObjectId, ref: ('GradeModel')}],
-    // Added by MM @ 3:10PM
-    distributionresults: [{type: mongoose.Schema.ObjectId, ref: ('DistributionresultModel')}]
-    // End add
+    distributionresults: [{type: mongoose.Schema.ObjectId, ref: ('DistributionresultModel')}],
+    itrprograms: [{type: mongoose.Schema.ObjectId,ref: 'ItrprogramModel'}]
 }
 );
 var residencySchema = mongoose.Schema(
@@ -118,7 +117,6 @@ var termcodeSchema = mongoose.Schema(
     programrecords: [{type: mongoose.Schema.ObjectId, ref: ('ProgramrecordModel')}]
 }
 );
-// Added by MM @ 2:43PM
 var distributionresultSchema = mongoose.Schema(
 {
     date: String,
@@ -129,13 +127,63 @@ var distributionresultSchema = mongoose.Schema(
 var commentcodeSchema = mongoose.Schema(
 {
     code: String,
-    progAction: String,
+    progaction: String,
     description: String,
     notes: String,
     distributionresult: {type: mongoose.Schema.ObjectId, ref: 'DistributionresultModel'}
 }
 );
-// End add
+var itrprogramSchema = mongoose.Schema(
+{
+    order: String,
+    eligibility: String,
+    student: {type: mongoose.Schema.ObjectId, ref: 'StudentsModel'},
+    academicprogramcode: {type:mongoose.Schema.ObjectId, ref: 'AcademicprogramcodeModel'}
+}
+);
+var academicprogramcodeSchema = mongoose.Schema(
+{
+    name: String,
+    itrprogram: {type:mongoose.Schema.ObjectId, ref: 'ItrprogramModel'},
+    programadministrations: [{type: mongoose.Schema.ObjectId, ref: ('ProgramadministrationModel')}],
+    admissionrule: {type:mongoose.Schema.ObjectId, ref: 'AdmissionruleModel'},
+}
+);
+var programadministrationSchema = mongoose.Schema(
+{
+    name: String,
+    position: String,
+    academicprogramcode: {type:mongoose.Schema.ObjectId, ref: 'AcademicprogramcodeModel'},
+    department: {type:mongoose.Schema.ObjectId, ref: 'DepartmentModel'},
+}
+);
+var departmentSchema = mongoose.Schema(
+{
+    name: String,
+    faculty: {type:mongoose.Schema.ObjectId, ref: 'FacultyModel'},
+    programadministrations: [{type: mongoose.Schema.ObjectId, ref: ('ProgramadministrationModel')}]
+}
+);
+var facultySchema = mongoose.Schema(
+{
+    name: String,
+    department: [{type: mongoose.Schema.ObjectId, ref: ('DepartmentModel')}]
+}
+);
+var admissionruleSchema = mongoose.Schema(
+{
+    description: String,
+    academicprogramcodes: [{type: mongoose.Schema.ObjectId, ref: ('AdademicprogramcodeModel')}],
+    logicalexpressions: [{type: mongoose.Schema.ObjectId, ref: ('LogicalexpressionModel')}]
+}
+);
+var logicalexpressionSchema = mongoose.Schema(
+{
+    booleanExp: String,
+    logicalLink: String,
+    admissionrule: {type:mongoose.Schema.ObjectId, ref: 'admissionrule'}
+}
+);
 
 var StudentsModel = mongoose.model('student', studentsSchema);
 var ResidencyModel = mongoose.model('residency', residencySchema);
@@ -149,10 +197,15 @@ var CoursecodeModel = mongoose.model('coursecode', coursecodeSchema);
 var ProgramrecordModel = mongoose.model('programrecord', programrecordSchema);
 var DegreecodeModel = mongoose.model('degreecode', degreecodeSchema);
 var TermcodeModel = mongoose.model('termcode', termcodeSchema);
-// Added by MM @ 3:03
 var DistributionresultModel = mongoose.model('distributionresult', distributionresultSchema);
 var CommentcodeModel = mongoose.model('commentcode', commentcodeSchema);
-// End add
+var AcademicprogramcodeModel = mongoose.model('academicprogramcode', academicprogramcodeSchema);
+var ItrprogramModel = mongoose.model('itrprogram', itrprogramSchema);
+var ProgramadministrationModel = mongoose.model('programadministration', programadministrationSchema);
+var FacultyModel = mongoose.model('faculty', facultySchema);
+var DepartmentModel = mongoose.model('department', departmentSchema);
+var AdmissionruleModel = mongoose.model('admissionrule', admissionruleSchema);
+var LogicalexpressionModel = mongoose.model('logicalexpression', logicalexpressionSchema);
 
 app.route('/students')
 .post(function (request, response) {
@@ -376,10 +429,207 @@ app.route('/coursecodes/:coursecode_id')
             });
         }
     })
-});
+})
+.delete(function (request, response) {
+    CoursecodeModel.findByIdAndRemove(request.params.coursecode_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({coursecode: deleted});
+            };
+        }
+        );
+});;
 //end added - COURSECODES
 
-// Added DISTRIBUTIONRESULTS ROUTES @ 3:16PM MM
+//added - PROGRAMRECORDS
+app.route('/programrecords')
+.post(function (request, response) {
+    var programrecord = new ProgramrecordModel(request.body.programrecord);
+    programrecord.save(function (error) {
+        if (error) response.send(error);
+        response.json({programrecord: programrecord});
+    });
+})
+.get(function (request, response) {
+    var Programrecord = request.query.programrecord;
+    if (!Programrecord) {
+        ProgramrecordModel.find(function (error, programrecords) {
+            if (error) response.send(error);
+            response.json({programrecord: programrecords});
+        });
+    }
+});
+
+app.route('/programrecords/:programrecord_id')
+.get(function (request, response) {
+    ProgramrecordModel.findById(request.params.programrecord_id, function (error, programrecord) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({programrecord: programrecord});
+        }
+    });
+})
+.put(function (request, response) {
+    ProgramrecordModel.findById(request.params.programrecord_id, function (error, programrecord) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            programrecord.level = request.body.programrecord.level;
+            programrecord.status = request.body.programrecord.status;
+            programrecord.comment = request.body.programrecord.comment;
+            programrecord.degreecode = request.body.programrecord.degreecode;
+            programrecord.termcode = request.body.programrecord.termcode;
+
+            programrecord.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({programrecord: programrecord});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    ProgramrecordModel.findByIdAndRemove(request.params.programrecord_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({programrecord: deleted});
+            };
+        }
+        );
+});
+//end added - PROGRAMRECORDS
+
+//added - DEGREECODES
+app.route('/degreecodes')
+.post(function (request, response) {
+    var degreecode = new DegreecodeModel(request.body.degreecode);
+    degreecode.save(function (error) {
+        if (error) response.send(error);
+        response.json({degreecode: degreecode});
+    });
+})
+.get(function (request, response) {
+    var Programrecord = request.query.filter;
+    if (!Programrecord) {
+        DegreecodeModel.find(function (error, degreecodes) {
+            if (error) response.send(error);
+            response.json({degreecode: degreecodes});
+        });
+    } else {
+        PermissionTypeModel.find({"programrecord": Programrecord.programrecord}, function (error, programrecords) {
+            if (error) response.send(error);
+            response.json({degreecode: programrecords});
+        });
+    }
+});
+
+app.route('/degreecodes/:degreecode_id')
+.get(function (request, response) {
+    DegreecodeModel.findById(request.params.degreecode_id, function (error, degreecode) {
+        if (error) response.send(error);
+        response.json({degreecode: degreecode});
+    })
+})
+.put(function (request, response) {
+    DegreecodeModel.findById(request.params.degreecode_id, function (error, degreecode) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            degreecode.name = request.body.degreecode.name;
+            degreecode.programrecords = request.body.degreecode.programrecords;
+
+            degreecode.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({degreecode: degreecode});
+                }
+            });
+        }
+    })
+})
+.delete(function (request, response) {
+    DegreecodeModel.findByIdAndRemove(request.params.degreecode_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({degreecode: deleted});
+            };
+        }
+        );
+});
+//end added - DEGREECODES
+
+//added - TERMCODES
+app.route('/termcodes')
+.post(function (request, response) {
+    var termcode = new TermcodeModel(request.body.termcode);
+    termcode.save(function (error) {
+        if (error) response.send(error);
+        response.json({termcode: termcode});
+    });
+})
+.get(function (request, response) {
+    var Programrecord = request.query.filter;
+    if (!Programrecord) {
+        TermcodeModel.find(function (error, termcodes) {
+            if (error) response.send(error);
+            response.json({termcode: termcodes});
+        });
+    } else {
+        PermissionTypeModel.find({"programrecord": Programrecord.programrecord}, function (error, programrecords) {
+            if (error) response.send(error);
+            response.json({termcode: programrecords});
+        });
+    }
+});
+
+app.route('/termcodes/:termcode_id')
+.get(function (request, response) {
+    TermcodeModel.findById(request.params.termcode_id, function (error, termcode) {
+        if (error) response.send(error);
+        response.json({termcode: termcode});
+    })
+})
+.put(function (request, response) {
+    TermcodeModel.findById(request.params.termcode_id, function (error, termcode) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            termcode.name = request.body.termcode.name;
+            termcode.programrecords = request.body.termcode.programrecords;
+
+            termcode.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({termcode: termcode});
+                }
+            });
+        }
+    })
+})
+.delete(function (request, response) {
+    TermcodeModel.findByIdAndRemove(request.params.termcode_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({termcode: deleted});
+            };
+        }
+        );
+});
+//end added - TERMCODES
+
+//added - DISTRIBUTIONRESULTS
 app.route('/distributionresults')
 .post(function (request, response) {
     var distributionresult = new DistributionresultModel(request.body.distributionresult);
@@ -417,7 +667,6 @@ app.route('/distributionresults/:distributionresult_id')
         else {
             distributionresult.date = request.body.distributionresult.date;
             distributionresult.student = request.body.distributionresult.student;
-            distributionresult.commentcodes = request.body.distributionresult.commentcodes;
 
             distributionresult.save(function (error) {
                 if (error) {
@@ -439,9 +688,9 @@ app.route('/distributionresults/:distributionresult_id')
         }
         );
 });
-// End added - DISTRIBUTIONRESULTS
+//end added - DISTRIBUTIONRESULTS
 
-// Added COMMENTCODE ROUTES @ 3:30PM MM
+//added - COMMENTCODES
 app.route('/commentcodes')
 .post(function (request, response) {
     var commentcode = new CommentcodeModel(request.body.commentcode);
@@ -463,9 +712,13 @@ app.route('/commentcodes')
 app.route('/commentcodes/:commentcode_id')
 .get(function (request, response) {
     CommentcodeModel.findById(request.params.commentcode_id, function (error, commentcode) {
-        if (error) response.send(error);
-        response.json({commentcode: commentcode});
-    })
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({commentcode: commentcode});
+        }
+    });
 })
 .put(function (request, response) {
     CommentcodeModel.findById(request.params.commentcode_id, function (error, commentcode) {
@@ -473,11 +726,8 @@ app.route('/commentcodes/:commentcode_id')
             response.send({error: error});
         }
         else {
-            commentcode.code = request.body.commentcode.code;
-            commentcode.number = request.body.commentcode.number;
-            commentcode.name = request.body.commentcode.name;
-            commentcode.unit = request.body.commentcode.unit;
-            commentcode.grades = request.body.commentcode.grades;
+            commentcode.date = request.body.commentcode.date;
+            commentcode.distributionresult = request.body.commentcode.distributionresult;
 
             commentcode.save(function (error) {
                 if (error) {
@@ -488,7 +738,7 @@ app.route('/commentcodes/:commentcode_id')
                 }
             });
         }
-    })
+    });
 })
 .delete(function (request, response) {
     CommentcodeModel.findByIdAndRemove(request.params.commentcode_id,
@@ -499,7 +749,7 @@ app.route('/commentcodes/:commentcode_id')
         }
         );
 });
-// End add - COMMENTCODE
+//end added - COMMENTCODES
 
 app.route('/residencies')
 .post(function (request, response) {
@@ -550,6 +800,15 @@ app.route('/residencies/:residency_id')
             });
         }
     })
+})
+.delete(function (request, response) {
+    ResidencyModel.findByIdAndRemove(request.params.residency_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({residency: deleted});
+            };
+        }
+        );
 });
 
 app.route('/genders')
@@ -583,7 +842,7 @@ app.route('/genders/:gender_id')
     })
 })
 .put(function (request, response) {
-    GenderModel.findById(request.params.rolePermission_id, function (error, gender) {
+    GenderModel.findById(request.params.gender_id, function (error, gender) {
         if (error) {
             response.send({error: error});
         }
@@ -649,7 +908,7 @@ app.route('/countries/:country_id')
     })
 })
 .put(function (request, response) {
-    CountryModel.findById(request.params.rolePermission_id, function (error, country) {
+    CountryModel.findById(request.params.country_id, function (error, country) {
         if (error) {
             response.send({error: error});
         }
@@ -668,6 +927,15 @@ app.route('/countries/:country_id')
             });
         }
     })
+})
+.delete(function (request, response) {
+    CountryModel.findByIdAndRemove(request.params.country_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({country: deleted});
+            };
+        }
+        );
 });
 
 app.route('/provinces')
@@ -718,7 +986,7 @@ app.route('/provinces/:province_id')
     })
 })
 .put(function (request, response) {
-    ProvinceModel.findById(request.params.rolePermission_id, function (error, province) {
+    ProvinceModel.findById(request.params.province_id, function (error, province) {
         if (error) {
             response.send({error: error});
         }
@@ -738,6 +1006,15 @@ app.route('/provinces/:province_id')
             });
         }
     })
+})
+.delete(function (request, response) {
+    ProvinceModel.findByIdAndRemove(request.params.province_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({province: deleted});
+            };
+        }
+        );
 });
 
 app.route('/cities')
@@ -771,7 +1048,7 @@ app.route('/cities/:city_id')
     })
 })
 .put(function (request, response) {
-    CityModel.findById(request.params.rolePermission_id, function (error, city) {
+    CityModel.findById(request.params.city_id, function (error, city) {
         if (error) {
             response.send({error: error});
         }
@@ -789,6 +1066,15 @@ app.route('/cities/:city_id')
             });
         }
     })
+})
+.delete(function (request, response) {
+    CityModel.findByIdAndRemove(request.params.city_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({city: deleted});
+            };
+        }
+        );
 });
 
 app.route('/academicloads')
@@ -822,7 +1108,7 @@ app.route('/academicloads/:academicload_id')
     })
 })
 .put(function (request, response) {
-    AcademicloadModel.findById(request.params.rolePermission_id, function (error, academicload) {
+    AcademicloadModel.findById(request.params.academicload_id, function (error, academicload) {
         if (error) {
             response.send({error: error});
         }
@@ -840,7 +1126,230 @@ app.route('/academicloads/:academicload_id')
             });
         }
     })
+})
+.delete(function (request, response) {
+    AcademicloadModel.findByIdAndRemove(request.params.academicload_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({academicload: deleted});
+            };
+        }
+        );
 });
+
+//ADDED - ITRPROGRAMS
+app.route('/itrprograms')
+.post(function (request, response) {
+    var itrprogram = new ItrprogramModel(request.body.itrprogram);
+    itrprogram.save(function (error) {
+        if (error) response.send(error);
+        response.json({itrprogram: itrprogram});
+    });
+})
+.get(function (request, response) {
+    var itrprogram = request.query.itrprogram;
+    if (!itrprogram) {
+        ItrprogramModel.find(function (error, itrprograms) {
+            if (error) response.send(error);
+            response.json({itrprogram: itrprograms});
+        });
+    } 
+});
+
+app.route('/itrlists/:itrlist_id')
+.get(function (request, response) {
+    ItrlistModel.findById(request.params.itrlist_id, function (error, itrlist) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({itrlist: itrlist});
+        }
+    });
+})
+.put(function (request, response) {
+    ItrlistModel.findById(request.params.itrlist_id, function (error, itrlist) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            itrlist.order = request.body.itrlist.order;
+            itrlist.eligibility = request.body.itrlist.eligibility;
+            itrlist.student = request.body.itrlist.student;
+            itrlist.academicprogramcode = request.body.itrlist.academicprogramcode;
+            itrlist.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({itrlist: itrlist});
+                }
+            });
+        }
+    });
+})
+//END ADDED - ITRPROGRAMS
+
+//ADDED - ACADEMICPROGRAMCODES
+app.route('/academicprogramcodes')
+.post(function (request, response) {
+    var academicprogramcode = new AcademicprogramcodeModel(request.body.academicprogramcode);
+    academicprogramcode.save(function (error) {
+        if (error) response.send(error);
+        response.json({academicprogramcode: academicprogramcode});
+    });
+})
+.get(function (request, response) {
+    var academicprogramcode = request.query.academicprogramcode;
+    if (!academicprogramcode) {
+        AcademicprogramcodeModel.find(function (error, academicprogramcodes) {
+            if (error) response.send(error);
+            response.json({academicprogramcode: academicprogramcodes});
+        });
+    } 
+});
+//END ADDED - ACADEMICPROGRAMCODES
+
+//ADDED - PROGRAMADMINISTRATIONS
+app.route('/programadministrations')
+.post(function (request, response) {
+    var programadministration = new ProgramadministrationModel(request.body.programadministration);
+    programadministration.save(function (error) {
+        if (error) response.send(error);
+        response.json({programadministration: programadministration});
+    });
+})
+.get(function (request, response) {
+    var programadministration = request.query.programadministration;
+    if (!programadministration) {
+        ProgramadministrationModel.find(function (error, programadministrations) {
+            if (error) response.send(error);
+            response.json({programadministration: programadministrations});
+        });
+    } 
+});
+//END ADDED - PROGRAMADMINISTRATIONS
+
+//ADDED - DEPARTMENTS
+app.route('/departments')
+.post(function (request, response) {
+    var department = new DepartmentModel(request.body.department);
+    department.save(function (error) {
+        if (error) response.send(error);
+        response.json({department: department});
+    });
+})
+.get(function (request, response) {
+    var department = request.query.department;
+    if (!department) {
+        DepartmentModel.find(function (error, departments) {
+            if (error) response.send(error);
+            response.json({department: departments});
+        });
+    } 
+});
+//END ADDED - DEPARTMENTS
+
+//ADDED - FACULTIES
+app.route('/faculties')
+.post(function (request, response) {
+    var faculty = new FacultyModel(request.body.faculty);
+    faculty.save(function (error) {
+        if (error) response.send(error);
+        response.json({faculty: faculty});
+    });
+})
+.get(function (request, response) {
+    var faculty = request.query.faculty;
+    if (!faculty) {
+        FacultyModel.find(function (error, faculties) {
+            if (error) response.send(error);
+            response.json({faculty: faculties});
+        });
+    } 
+});
+
+// ADDED -- MM
+app.route('/faculties/:faculty_id')
+.get(function (request, response) {
+    FacultyModel.findById(request.params.faculty_id, function (error, faculty) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({faculty: faculty});
+        }
+    });
+})
+.put(function (request, response) {
+    FacultyModel.findById(request.params.faculty_id, function (error, faculty) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            faculty.name = request.body.faculty.name;
+            //faculty.department = request.body.faculty.department;
+
+            faculty.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({faculty: faculty});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    FacultyModel.findByIdAndRemove(request.params.faculty_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({faculty: deleted});
+            };
+        }
+        );
+});
+// END ADDED -- MM
+
+app.route('/admissionrules')
+.post(function (request, response) {
+    var admissionrule = new AdmissionruleModel(request.body.admissionrule);
+    admissionrule.save(function (error) {
+        if (error) response.send(error);
+        response.json({admissionrule: admissionrule});
+    });
+})
+.get(function (request, response) {
+    var admissionrule = request.query.admissionrule;
+    if (!admissionrule) {
+        AdmissionruleModel.find(function (error, admissionrules) {
+            if (error) response.send(error);
+            response.json({admissionrule: admissionrules});
+        });
+    } 
+});
+//END ADDED - ADMISSIONRULES
+
+//ADDED - LOGICALEXPRESSIONS
+app.route('/logicalexpressions')
+.post(function (request, response) {
+    var logicalexpression = new LogicalexpressionModel(request.body.logicalexpression);
+    logicalexpression.save(function (error) {
+        if (error) response.send(error);
+        response.json({logicalexpression: logicalexpression});
+    });
+})
+.get(function (request, response) {
+    var logicalexpression = request.query.logicalexpression;
+    if (!logicalexpression) {
+        LogicalexpressionModel.find(function (error, logicalexpressions) {
+            if (error) response.send(error);
+            response.json({logicalexpression: logicalexpressions});
+        });
+    } 
+});
+//END ADDED - LOGICALEXPRESSIONS
 
 app.listen(7700, function () {
     console.log('Listening on port 7700');
