@@ -1221,14 +1221,64 @@ app.route('/programadministrations')
 })
 .get(function (request, response) {
     var programadministration = request.query.programadministration;
-    if (!programadministration) {
-        ProgramadministrationModel.find(function (error, programadministrations) {
+    var department = request.query.department;
+    if(department){
+        ProgramadministrationModel.find({"department":department}, function (error, programadministrations) {
+            if (error) response.send(error);
+            response.json({programadministration: programadministrations});
+        });
+    }
+    else {
+        ProgramadministrationmentModel.find(function (error, programadministrations) {
             if (error) response.send(error);
             response.json({programadministration: programadministrations});
         });
     } 
 });
 //END ADDED - PROGRAMADMINISTRATIONS
+
+// ADDED -- MM
+app.route('/programadministrations/:programadministration_id')
+.get(function (request, response) {
+    ProgramadministrationModel.findById(request.params.programadministration_id, function (error, programadministration) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({programadministration: programadministration});
+        }
+    });
+})
+.put(function (request, response) {
+    ProgramadministrationModel.findById(request.params.programadministration_id, function (error, programadministration) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            programadministration.name = request.body.programadministration.name;
+
+            programadministration.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({programadministration: programadministration});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    ProgramadministrationModel.findByIdAndRemove(request.params.programadministration_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({programadministration: deleted});
+            };
+        }
+        );
+});
+// END ADDED -- MM
+
 
 //ADDED - DEPARTMENTS
 app.route('/departments')
@@ -1241,13 +1291,63 @@ app.route('/departments')
 })
 .get(function (request, response) {
     var department = request.query.department;
-    if (!department) {
+    var faculty = request.query.faculty;
+    if(faculty){
+        DepartmentModel.find({"faculty":faculty}, function (error, departments) {
+            if (error) response.send(error);
+            response.json({department: departments});
+        });
+    }
+    else {
         DepartmentModel.find(function (error, departments) {
             if (error) response.send(error);
             response.json({department: departments});
         });
     } 
 });
+
+// ADDED -- MM
+app.route('/departments/:department_id')
+.get(function (request, response) {
+    DepartmentModel.findById(request.params.department_id, function (error, department) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({department: department});
+        }
+    });
+})
+.put(function (request, response) {
+    DepartmentModel.findById(request.params.department_id, function (error, department) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            department.name = request.body.department.name;
+
+            department.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({department: department});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    DepartmentModel.findByIdAndRemove(request.params.department_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({department: deleted});
+            };
+        }
+        );
+});
+// END ADDED -- MM
+
 //END ADDED - DEPARTMENTS
 
 //ADDED - FACULTIES
