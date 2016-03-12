@@ -1280,7 +1280,7 @@ app.route('/programadministrations/:programadministration_id')
 // END ADDED -- MM
 
 
-//ADDED - DEPARTMENTS
+// ADDED - MM
 app.route('/departments')
 .post(function (request, response) {
     var department = new DepartmentModel(request.body.department);
@@ -1305,6 +1305,7 @@ app.route('/departments')
         });
     } 
 });
+// END ADDED -- MM
 
 // ADDED -- MM
 app.route('/departments/:department_id')
@@ -1348,9 +1349,7 @@ app.route('/departments/:department_id')
 });
 // END ADDED -- MM
 
-//END ADDED - DEPARTMENTS
 
-//ADDED - FACULTIES
 app.route('/faculties')
 .post(function (request, response) {
     var faculty = new FacultyModel(request.body.faculty);
@@ -1429,9 +1428,49 @@ app.route('/admissionrules')
         });
     } 
 });
-//END ADDED - ADMISSIONRULES
+// ADDED -- MM
+app.route('/admissionrules/:admissionrule_id')
+.get(function (request, response) {
+    AdmissionruleModel.findById(request.params.admissionrule_id, function (error, admissionrule) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({admissionrule: admissionrule});
+        }
+    });
+})
+.put(function (request, response) {
+    AdmissionruleModel.findById(request.params.admissionrule_id, function (error, admissionrule) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            admissionrule.description = request.body.admissionrule.description;
 
-//ADDED - LOGICALEXPRESSIONS
+            admissionrule.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({admissionrule: admissionrule});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    AdmissionruleModel.findByIdAndRemove(request.params.admissionrule_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({admissionrule: deleted});
+            };
+        }
+        );
+});
+// END ADDED -- MM
+
+// ADDED -- MM
 app.route('/logicalexpressions')
 .post(function (request, response) {
     var logicalexpression = new LogicalexpressionModel(request.body.logicalexpression);
@@ -1442,14 +1481,63 @@ app.route('/logicalexpressions')
 })
 .get(function (request, response) {
     var logicalexpression = request.query.logicalexpression;
-    if (!logicalexpression) {
+    var admissionrule = request.query.admissionrule;
+    if(admissionrule){
+        LogicalexpressionModel.find({"admissionrule":admissionrule}, function (error, logicalexpressions) {
+            if (error) response.send(error);
+            response.json({logicalexpression: logicalexpressions});
+        });
+    }
+    else {
         LogicalexpressionModel.find(function (error, logicalexpressions) {
             if (error) response.send(error);
             response.json({logicalexpression: logicalexpressions});
         });
     } 
 });
-//END ADDED - LOGICALEXPRESSIONS
+// END ADDED -- MM
+
+// ADDED -- MM
+app.route('/logicalexpressions/:logicalexpression_id')
+.get(function (request, response) {
+    LogicalexpressionModel.findById(request.params.logicalexpression_id, function (error, logicalexpression) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({logicalexpression: logicalexpression});
+        }
+    });
+})
+.put(function (request, response) {
+    LogicalexpressionModel.findById(request.params.logicalexpression_id, function (error, logicalexpression) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            logicalexpression.booleanExp = request.body.logicalexpression.booleanExp;
+
+            logicalexpression.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({logicalexpression: logicalexpression});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    LogicalexpressionModel.findByIdAndRemove(request.params.logicalexpression_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({logicalexpression: deleted});
+            };
+        }
+        );
+});
+// END ADDED -- MM
 
 app.listen(7700, function () {
     console.log('Listening on port 7700');
