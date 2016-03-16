@@ -3,9 +3,29 @@ var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var logger = require('./logger');
 
-mongoose.connect('mongodb://localhost/sasdb');
+var users = require('./routes/users');
+var passwords = require('./routes/passwords');
+var roleCodes = require('./routes/roleCodes');
+var userRoles = require('./routes/usersRoles');
+var rolePermissions = require('./routes/rolePermissions');
+var logins = require('./routes/logins');
+var roots = require('./routes/roots');
 
 var app = express();
+
+app.use('/users', users);
+app.use('/passwords', passwords);
+app.use('/roleCodes', roleCodes);
+app.use('/userRoles', userRoles);
+app.use('/rolePermissions', rolePermissions);
+app.use('/logins', logins);
+app.use('/roots', roots);
+
+mongoose.connect('mongodb://localhost/sasdb');
+
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.json());
+//app.use(express.static('public'));
 
 app.use(function (request, response, next) {
     response.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200');
@@ -13,11 +33,7 @@ app.use(function (request, response, next) {
     response.header('Access-Control-Allow-Methods', 'POST, PATCH, GET, PUT, DELETE, OPTIONS');
     next();
 });
-
 app.use(logger);
-
-app.use(bodyParser.urlencoded({extended: false}));
-app.use(bodyParser.json());
 //app.use(express.static('public'));
 
 var studentsSchema = mongoose.Schema(
@@ -223,44 +239,50 @@ app.route('/students')
             response.json({student: students});
         });
     }
-    // } else {
-    //     if (Student == "residency"){
-    //         StudentsModel.find({"residency": request.query.residency}, function (error, students) {
-    //             if (error) response.send(error);
-    //             response.json({student: students});
-    //         });
-    //     }
-    //     else if(Student == "gender"){
-    //         StudentsModel.find({"gender": request.query.gender}, function (error, students) {
-    //             if (error) response.send(error);
-    //             response.json({student: students});
-    //         });
-    //     }
-    //     else if(Student == "country"){
-    //         StudentsModel.find({"country": request.query.country}, function (error, students) {
-    //             if (error) response.send(error);
-    //             response.json({student: students});
-    //         });
-    //     }
-    //     else if(Student == "province"){
-    //         StudentsModel.find({"province": request.query.province}, function (error, students) {
-    //             if (error) response.send(error);
-    //             response.json({student: students});
-    //         });
-    //     }
-    //     else if(Student == "city"){
-    //         StudentsModel.find({"city": request.query.city}, function (error, students) {
-    //             if (error) response.send(error);
-    //             response.json({student: students});
-    //         });
-    //     }
-    //     else if(Student == "academicload"){
-    //         StudentsModel.find({"academicload": request.query.academicload}, function (error, students) {
-    //             if (error) response.send(error);
-    //             response.json({student: students});
-    //         });
-    //     }
-    // }
+// } else {
+//     if (Student == "grade"){
+//         StudentsModel.find({"grade": request.query.grade}, function (error, students) {
+//             if (error) response.send(error);
+//             response.json({student: students});
+//         });
+//     }
+//     else if (Student == "residency"){
+//         StudentsModel.find({"residency": request.query.residency}, function (error, students) {
+//             if (error) response.send(error);
+//             response.json({student: students});
+//         });
+//     }
+//     else if(Student == "gender"){
+//         StudentsModel.find({"gender": request.query.gender}, function (error, students) {
+//             if (error) response.send(error);
+//             response.json({student: students});
+//         });
+//     }
+//     else if(Student == "country"){
+//         StudentsModel.find({"country": request.query.country}, function (error, students) {
+//             if (error) response.send(error);
+//             response.json({student: students});
+//         });
+//     }
+//     else if(Student == "province"){
+//         StudentsModel.find({"province": request.query.province}, function (error, students) {
+//             if (error) response.send(error);
+//             response.json({student: students});
+//         });
+//     }
+//     else if(Student == "city"){
+//         StudentsModel.find({"city": request.query.city}, function (error, students) {
+//             if (error) response.send(error);
+//             response.json({student: students});
+//         });
+//     }
+//     else if(Student == "academicload"){
+//         StudentsModel.find({"academicload": request.query.academicload}, function (error, students) {
+//             if (error) response.send(error);
+//             response.json({student: students});
+//         });
+//     }
+// }
 });
 
 app.route('/students/:student_id')
@@ -323,7 +345,25 @@ app.route('/grades')
 })
 .get(function (request, response) {
     var Grade = request.query.grade;
-    if (!Grade) {
+    var mark = request.query.mark;
+    var student = request.query.student;
+    console.log(Grade);
+    console.log(mark);
+    console.log(student);
+
+    if (student) {
+        GradeModel.find({"student": student}, function (error, grades) {
+            if (error) response.send(error);
+            response.json({grade: grades});
+        });
+    }
+    else if (mark) {
+        GradeModel.find({"mark": mark}, function (error, grades) {
+            if (error) response.send(error);
+            response.json({grade: grades});
+        });
+    }
+    else {
         GradeModel.find(function (error, grades) {
             if (error) response.send(error);
             response.json({grade: grades});
@@ -331,49 +371,52 @@ app.route('/grades')
     }
 });
 
-app.route('/grades/:grade_id')
-.get(function (request, response) {
-    GradeModel.findById(request.params.grade_id, function (error, grade) {
-        if (error) {
-            response.send({error: error});
-        }
-        else {
-            response.json({grade: grade});
-        }
-    });
-})
-.put(function (request, response) {
-    GradeModel.findById(request.params.grade_id, function (error, grade) {
-        if (error) {
-            response.send({error: error});
-        }
-        else {
-            grade.mark = request.body.grade.mark;
-            grade.section = request.body.grade.section;
-            grade.student = request.body.grade.student;
-            grade.coursecode = request.body.grade.coursecode;
-            grade.programrecord = request.body.grade.programrecord;
+//         StudentsModel.find({"grade": request.query.grade}, function (error, students) {
 
-            grade.save(function (error) {
-                if (error) {
-                    response.send({error: error});
-                }
-                else {
-                    response.json({grade: grade});
-                }
-            });
-        }
+
+    app.route('/grades/:grade_id')
+    .get(function (request, response) {
+        GradeModel.findById(request.params.grade_id, function (error, grade) {
+            if (error) {
+                response.send({error: error});
+            }
+            else {
+                response.json({grade: grade});
+            }
+        });
+    })
+    .put(function (request, response) {
+        GradeModel.findById(request.params.grade_id, function (error, grade) {
+            if (error) {
+                response.send({error: error});
+            }
+            else {
+                grade.mark = request.body.grade.mark;
+                grade.section = request.body.grade.section;
+                grade.student = request.body.grade.student;
+                grade.coursecode = request.body.grade.coursecode;
+                grade.programrecord = request.body.grade.programrecord;
+
+                grade.save(function (error) {
+                    if (error) {
+                        response.send({error: error});
+                    }
+                    else {
+                        response.json({grade: grade});
+                    }
+                });
+            }
+        });
+    })
+    .delete(function (request, response) {
+        GradeModel.findByIdAndRemove(request.params.grade_id,
+            function (error, deleted) {
+                if (!error) {
+                    response.json({grade: deleted});
+                };
+            }
+            );
     });
-})
-.delete(function (request, response) {
-    GradeModel.findByIdAndRemove(request.params.grade_id,
-        function (error, deleted) {
-            if (!error) {
-                response.json({grade: deleted});
-            };
-        }
-        );
-});
 //end added - GRADES
 
 //added - COURSECODES
@@ -860,6 +903,15 @@ app.route('/genders/:gender_id')
             });
         }
     })
+})
+.delete(function (request, response) {
+    GenderModel.findByIdAndRemove(request.params.gender_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({gender: deleted});
+            };
+        }
+        );
 });
 
 app.route('/countries')
@@ -884,20 +936,20 @@ app.route('/countries')
         });
     }
 
-    // //added
-    // var Province = request.query.filter;
-    // if (!Province) {
-    //     CountryModel.find(function (error, countries) {
-    //         if (error) response.send(error);
-    //         response.json({country: countries});
-    //     });
-    // } else {
-    //     PermissionTypeModel.find({"province": Province.province}, function (error, provinces) {
-    //         if (error) response.send(error);
-    //         response.json({country: provinces});
-    //     });
-    // }
-    // //end added
+// //added
+// var Province = request.query.filter;
+// if (!Province) {
+//     CountryModel.find(function (error, countries) {
+//         if (error) response.send(error);
+//         response.json({country: countries});
+//     });
+// } else {
+//     PermissionTypeModel.find({"province": Province.province}, function (error, provinces) {
+//         if (error) response.send(error);
+//         response.json({country: provinces});
+//     });
+// }
+// //end added
 });
 
 app.route('/countries/:country_id')
@@ -960,22 +1012,22 @@ app.route('/provinces')
         });
     }
 
-    // //added
-    // var Province = request.query.province;
-    // if (!Province) {
-    //     ProvinceModel.find(function (error, provinces) {
-    //         if (error) response.send(error);
-    //         response.json({province: provinces});
-    //     });
-    // } else {
-    //     if(Province == "country"){
-    //         ProvinceModel.find({"country": request.query.country}, function (error, provinces) {
-    //             if (error) response.send(error);
-    //             response.json({province: provinces});
-    //         });
-    //     }
-    // }
-    // //end added
+// //added
+// var Province = request.query.province;
+// if (!Province) {
+//     ProvinceModel.find(function (error, provinces) {
+//         if (error) response.send(error);
+//         response.json({province: provinces});
+//     });
+// } else {
+//     if(Province == "country"){
+//         ProvinceModel.find({"country": request.query.country}, function (error, provinces) {
+//             if (error) response.send(error);
+//             response.json({province: provinces});
+//         });
+//     }
+// }
+// //end added
 });
 
 app.route('/provinces/:province_id')
@@ -1235,7 +1287,6 @@ app.route('/programadministrations')
         });
     } 
 });
-//END ADDED - PROGRAMADMINISTRATIONS
 
 // ADDED -- MM
 app.route('/programadministrations/:programadministration_id')
@@ -1278,8 +1329,9 @@ app.route('/programadministrations/:programadministration_id')
         );
 });
 // END ADDED -- MM
+//END ADDED - PROGRAMADMINISTRATIONS
 
-
+//ADDED - DEPARTMENTS
 // ADDED - MM
 app.route('/departments')
 .post(function (request, response) {
@@ -1348,8 +1400,9 @@ app.route('/departments/:department_id')
         );
 });
 // END ADDED -- MM
+//END ADDED - DEPARTMENTS
 
-
+//ADDED - FACULTIES
 app.route('/faculties')
 .post(function (request, response) {
     var faculty = new FacultyModel(request.body.faculty);
@@ -1410,7 +1463,9 @@ app.route('/faculties/:faculty_id')
         );
 });
 // END ADDED -- MM
+//END ADDED - FACULTIES
 
+//ADDED - ADMISSIONRULES
 app.route('/admissionrules')
 .post(function (request, response) {
     var admissionrule = new AdmissionruleModel(request.body.admissionrule);
@@ -1428,6 +1483,7 @@ app.route('/admissionrules')
         });
     } 
 });
+
 // ADDED -- MM
 app.route('/admissionrules/:admissionrule_id')
 .get(function (request, response) {
@@ -1469,7 +1525,9 @@ app.route('/admissionrules/:admissionrule_id')
         );
 });
 // END ADDED -- MM
+//END ADDED - ADMISSIONRULES
 
+//ADDED - LOGICALEXPRESSIONS
 // ADDED -- MM
 app.route('/logicalexpressions')
 .post(function (request, response) {
@@ -1538,6 +1596,8 @@ app.route('/logicalexpressions/:logicalexpression_id')
         );
 });
 // END ADDED -- MM
+
+//END ADDED - LOGICALEXPRESSIONS
 
 app.listen(7700, function () {
     console.log('Listening on port 7700');
