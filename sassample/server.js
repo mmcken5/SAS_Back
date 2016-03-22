@@ -3,29 +3,23 @@ var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var logger = require('./logger');
 
+/*ADDED*/
+//remove all residencies and students from SASmongodb.js
+//change mongoose on sasmongodb to createConnection(..sasdb)
+//replace all node modules
+var app = express();
 var users = require('./routes/users');
-var passwords = require('./routes/passwords');
 var roleCodes = require('./routes/roleCodes');
 var userRoles = require('./routes/usersRoles');
 var rolePermissions = require('./routes/rolePermissions');
+var passwords = require('./routes/passwords');
 var logins = require('./routes/logins');
 var roots = require('./routes/roots');
-
-var app = express();
-
-app.use('/users', users);
-app.use('/passwords', passwords);
-app.use('/roleCodes', roleCodes);
-app.use('/userRoles', userRoles);
-app.use('/rolePermissions', rolePermissions);
-app.use('/logins', logins);
-app.use('/roots', roots);
+/*END ADDED*/
 
 mongoose.connect('mongodb://localhost/sasdb');
 
-app.use(bodyParser.urlencoded({extended: false}));
-app.use(bodyParser.json());
-//app.use(express.static('public'));
+var app = express();
 
 app.use(function (request, response, next) {
     response.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200');
@@ -33,7 +27,23 @@ app.use(function (request, response, next) {
     response.header('Access-Control-Allow-Methods', 'POST, PATCH, GET, PUT, DELETE, OPTIONS');
     next();
 });
+
 app.use(logger);
+
+/*ADDED*/
+app.use('/users', users);
+app.use('/roleCodes', roleCodes);
+app.use('/userRoles', userRoles);
+app.use('/rolePermissions', rolePermissions);
+app.use('/passwords', passwords);
+app.use('/logins', logins);
+app.use('/roots', roots);
+/*END ADDED*/
+
+
+
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.json());
 //app.use(express.static('public'));
 
 var studentsSchema = mongoose.Schema(
@@ -200,6 +210,78 @@ var logicalexpressionSchema = mongoose.Schema(
     admissionrule: {type:mongoose.Schema.ObjectId, ref: 'admissionrule'}
 }
 );
+
+/*ADDED ALAN*/
+/*var usersSchema = mongoose.Schema(
+    {
+        firstName: String,
+        lastName: String,
+        email: String,
+        enabled: Boolean,
+        userShadow: {type: mongoose.Schema.ObjectId, ref: ('PasswordsModel')},
+        userRoles: [{type: mongoose.Schema.ObjectId, ref: 'UserRoleModel'}]
+    }
+);
+var passwordSchema = mongoose.Schema(
+    {
+        userName: String,
+        salt: String,
+        encryptedPassword: String,
+        userAccountExpiryDate: Date,
+        passwordMustChanged : Boolean,
+        passwordReset: Boolean,
+        user: {type: mongoose.Schema.ObjectId, ref: ('UsersModel')}
+    }
+);
+var loginSchema = mongoose.Schema(
+    {
+        userName: String,
+        password: String,
+        nonce: String,
+        response: String,
+        token: String,
+        requestType: String,
+        wrongUserName: Boolean,
+        wrongPassword: Boolean,
+        passwordMustChanged: Boolean,
+        passwordReset: Boolean,
+        loginFailed: Boolean,
+        sessionIsActive: Boolean
+    }
+);
+var rootSchema = mongoose.Schema(
+    {
+        password: String,
+        nonce: String,
+        response: String,
+        wrongPassword: Boolean,
+        sessionIsActive: Boolean
+    }
+);
+var userRoleSchema = mongoose.Schema(
+    {
+        dateAssigned: Date,
+        user: {type: mongoose.Schema.ObjectId, ref: ('UsersModel')},
+        role: {type: mongoose.Schema.ObjectId, ref: ('RoleCodeModel')}
+    }
+);
+var roleCodeSchema = mongoose.Schema(
+    {
+        name: String,
+        userRoles: [{type: mongoose.Schema.ObjectId, ref: 'UserRoleModel'}],
+        features: [{type: mongoose.Schema.ObjectId, ref: 'RolePermissionModel'}]
+    }
+);
+var rolePermissionSchema = mongoose.Schema(
+    {
+        code: String,
+        sysFeature: String,
+        roleCodes: [{type: mongoose.Schema.ObjectId, ref: ('RoleCodeModel')}]
+    }
+);*/
+/*END ADDED ALAN*/
+
+
 
 var StudentsModel = mongoose.model('student', studentsSchema);
 var ResidencyModel = mongoose.model('residency', residencySchema);
