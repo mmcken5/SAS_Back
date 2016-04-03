@@ -3,7 +3,6 @@ var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var logger = require('./logger');
 
-/*ADDED*/
 //remove all residencies and students from SASmongodb.js
 //change mongoose on sasmongodb to createConnection(..sasdb)
 //replace all node modules
@@ -15,7 +14,6 @@ var rolePermissions = require('./routes/rolePermissions');
 var passwords = require('./routes/passwords');
 var logins = require('./routes/logins');
 var roots = require('./routes/roots');
-/*END ADDED*/
 
 mongoose.connect('mongodb://localhost/sasdb');
 
@@ -30,7 +28,6 @@ app.use(function (request, response, next) {
 
 app.use(logger);
 
-/*ADDED*/
 app.use('/users', users);
 app.use('/roleCodes', roleCodes);
 app.use('/userRoles', userRoles);
@@ -38,7 +35,6 @@ app.use('/rolePermissions', rolePermissions);
 app.use('/passwords', passwords);
 app.use('/logins', logins);
 app.use('/roots', roots);
-/*END ADDED*/
 
 
 
@@ -211,6 +207,39 @@ var logicalexpressionSchema = mongoose.Schema(
 }
 );
 
+// ADDED MM
+var secondaryschoolSchema = mongoose.Schema(
+{
+    name: String,
+    student: {type: mongoose.Schema.ObjectId, ref: 'StudentsModel'},
+    highschoolcoursesmarks: [{type: mongoose.Schema.ObjectId, ref: ('HighschoolcoursesmarkModel')}]
+}
+);
+var highschoolcoursesmarksSchema = mongoose.Schema(
+{
+    level: String,
+    source: String,
+    unit: String,
+    grade: String,
+    secondaryschool: {type: mongoose.Schema.ObjectId, ref: 'StudentsModel'},
+    highschoolsubject: {type: mongoose.Schema.ObjectId, ref: 'HighschoolsubjectModel'},
+}
+);
+var highschoolsubjectSchema = mongoose.Schema(
+{
+    name: String,
+    description: String,
+    highschoolcoursesmarks: [{type: mongoose.Schema.ObjectId, ref: ('HighschoolcoursesmarkModel')}]
+}
+);
+var scholarandawardcodeSchema = mongoose.Schema(
+{
+    name: String,
+    student: {type: mongoose.Schema.ObjectId, ref: 'ScholarandawardcodeModel'}
+}
+);
+// END ADDED MM
+
 /*ADDED ALAN*/
 /*var usersSchema = mongoose.Schema(
     {
@@ -304,6 +333,13 @@ var FacultyModel = mongoose.model('faculty', facultySchema);
 var DepartmentModel = mongoose.model('department', departmentSchema);
 var AdmissionruleModel = mongoose.model('admissionrule', admissionruleSchema);
 var LogicalexpressionModel = mongoose.model('logicalexpression', logicalexpressionSchema);
+
+// ADDED MM
+var SecondaryschoolModel = mongoose.model('secondaryschool', secondaryschoolSchema);
+var HighschoolcoursesmarkModel = mongoose.model('highschoolcoursesmark', highschoolcoursesmarksSchema);
+var HighschoolsubjectModel = mongoose.model('highschoolsubject', highschoolsubjectSchema);
+var ScholarandawardcodeModel = mongoose.model('scholarandawardcode', scholarandawardcodeSchema);
+// END ADDED MM
 
 app.route('/students')
 .post(function (request, response) {
@@ -416,7 +452,6 @@ app.route('/students/:student_id')
         );
 });
 
-//added - GRADES
 app.route('/grades')
 .post(function (request, response) {
     var grade = new GradeModel(request.body.grade);
@@ -499,9 +534,7 @@ app.route('/grades')
             }
             );
     });
-//end added - GRADES
 
-//added - COURSECODES
 app.route('/coursecodes')
 .post(function (request, response) {
     var coursecode = new CoursecodeModel(request.body.coursecode);
@@ -564,9 +597,7 @@ app.route('/coursecodes/:coursecode_id')
         }
         );
 });;
-//end added - COURSECODES
 
-//added - PROGRAMRECORDS
 app.route('/programrecords')
 .post(function (request, response) {
     var programrecord = new ProgramrecordModel(request.body.programrecord);
@@ -628,9 +659,7 @@ app.route('/programrecords/:programrecord_id')
         }
         );
 });
-//end added - PROGRAMRECORDS
 
-//added - DEGREECODES
 app.route('/degreecodes')
 .post(function (request, response) {
     var degreecode = new DegreecodeModel(request.body.degreecode);
@@ -690,9 +719,7 @@ app.route('/degreecodes/:degreecode_id')
         }
         );
 });
-//end added - DEGREECODES
 
-//added - TERMCODES
 app.route('/termcodes')
 .post(function (request, response) {
     var termcode = new TermcodeModel(request.body.termcode);
@@ -752,9 +779,7 @@ app.route('/termcodes/:termcode_id')
         }
         );
 });
-//end added - TERMCODES
 
-//added - DISTRIBUTIONRESULTS
 app.route('/distributionresults')
 .post(function (request, response) {
     var distributionresult = new DistributionresultModel(request.body.distributionresult);
@@ -813,9 +838,7 @@ app.route('/distributionresults/:distributionresult_id')
         }
         );
 });
-//end added - DISTRIBUTIONRESULTS
 
-//added - COMMENTCODES
 app.route('/commentcodes')
 .post(function (request, response) {
     var commentcode = new CommentcodeModel(request.body.commentcode);
@@ -874,7 +897,6 @@ app.route('/commentcodes/:commentcode_id')
         }
         );
 });
-//end added - COMMENTCODES
 
 app.route('/residencies')
 .post(function (request, response) {
@@ -1271,7 +1293,6 @@ app.route('/academicloads/:academicload_id')
         );
 });
 
-//ADDED - ITRPROGRAMS
 app.route('/itrprograms')
 .post(function (request, response) {
     var itrprogram = new ItrprogramModel(request.body.itrprogram);
@@ -1322,9 +1343,7 @@ app.route('/itrlists/:itrlist_id')
         }
     });
 })
-//END ADDED - ITRPROGRAMS
 
-//ADDED - ACADEMICPROGRAMCODES
 app.route('/academicprogramcodes')
 .post(function (request, response) {
     var academicprogramcode = new AcademicprogramcodeModel(request.body.academicprogramcode);
@@ -1342,9 +1361,7 @@ app.route('/academicprogramcodes')
         });
     } 
 });
-//END ADDED - ACADEMICPROGRAMCODES
 
-//ADDED - PROGRAMADMINISTRATIONS
 app.route('/programadministrations')
 .post(function (request, response) {
     var programadministration = new ProgramadministrationModel(request.body.programadministration);
@@ -1370,7 +1387,6 @@ app.route('/programadministrations')
     } 
 });
 
-// ADDED -- MM
 app.route('/programadministrations/:programadministration_id')
 .get(function (request, response) {
     ProgramadministrationModel.findById(request.params.programadministration_id, function (error, programadministration) {
@@ -1410,11 +1426,7 @@ app.route('/programadministrations/:programadministration_id')
         }
         );
 });
-// END ADDED -- MM
-//END ADDED - PROGRAMADMINISTRATIONS
 
-//ADDED - DEPARTMENTS
-// ADDED - MM
 app.route('/departments')
 .post(function (request, response) {
     var department = new DepartmentModel(request.body.department);
@@ -1439,9 +1451,7 @@ app.route('/departments')
         });
     } 
 });
-// END ADDED -- MM
 
-// ADDED -- MM
 app.route('/departments/:department_id')
 .get(function (request, response) {
     DepartmentModel.findById(request.params.department_id, function (error, department) {
@@ -1481,10 +1491,7 @@ app.route('/departments/:department_id')
         }
         );
 });
-// END ADDED -- MM
-//END ADDED - DEPARTMENTS
 
-//ADDED - FACULTIES
 app.route('/faculties')
 .post(function (request, response) {
     var faculty = new FacultyModel(request.body.faculty);
@@ -1503,7 +1510,6 @@ app.route('/faculties')
     } 
 });
 
-// ADDED -- MM
 app.route('/faculties/:faculty_id')
 .get(function (request, response) {
     FacultyModel.findById(request.params.faculty_id, function (error, faculty) {
@@ -1544,10 +1550,7 @@ app.route('/faculties/:faculty_id')
         }
         );
 });
-// END ADDED -- MM
-//END ADDED - FACULTIES
 
-//ADDED - ADMISSIONRULES
 app.route('/admissionrules')
 .post(function (request, response) {
     var admissionrule = new AdmissionruleModel(request.body.admissionrule);
@@ -1566,7 +1569,6 @@ app.route('/admissionrules')
     } 
 });
 
-// ADDED -- MM
 app.route('/admissionrules/:admissionrule_id')
 .get(function (request, response) {
     AdmissionruleModel.findById(request.params.admissionrule_id, function (error, admissionrule) {
@@ -1606,11 +1608,7 @@ app.route('/admissionrules/:admissionrule_id')
         }
         );
 });
-// END ADDED -- MM
-//END ADDED - ADMISSIONRULES
 
-//ADDED - LOGICALEXPRESSIONS
-// ADDED -- MM
 app.route('/logicalexpressions')
 .post(function (request, response) {
     var logicalexpression = new LogicalexpressionModel(request.body.logicalexpression);
@@ -1635,9 +1633,7 @@ app.route('/logicalexpressions')
         });
     } 
 });
-// END ADDED -- MM
 
-// ADDED -- MM
 app.route('/logicalexpressions/:logicalexpression_id')
 .get(function (request, response) {
     LogicalexpressionModel.findById(request.params.logicalexpression_id, function (error, logicalexpression) {
@@ -1677,9 +1673,271 @@ app.route('/logicalexpressions/:logicalexpression_id')
         }
         );
 });
-// END ADDED -- MM
 
-//END ADDED - LOGICALEXPRESSIONS
+
+// ADDED MM
+app.route('/secondaryschools')
+.post(function (request, response) {
+    var secondaryschool = new SecondaryschoolModel(request.body.secondaryschool);
+    secondaryschool.save(function (error) {
+        if (error) response.send(error);
+        response.json({secondaryschool: secondaryschool});
+    });
+})
+.get(function (request, response) {
+    var Secondaryschool = request.query.secondaryschool;
+    var student = request.query.student;
+    if (student) {
+        SecondaryschoolModel.find({"student": student}, function (error, secondaryschools) {
+            if (error) response.send(error);
+            response.json({secondaryschool: secondaryschools});
+        });
+    }
+    else {
+        SecondaryschoolModel.find(function (error, secondaryschools) {
+            if (error) response.send(error);
+            response.json({secondaryschool: secondaryschools});
+        });
+    }
+});
+
+app.route('/secondaryschools/:secondaryschool_id')
+.get(function (request, response) {
+    SecondaryschoolModel.findById(request.params.secondaryschool_id, function (error, secondaryschool) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({secondaryschool: secondaryschool});
+        }
+    });
+})
+.put(function (request, response) {
+    SecondaryschoolModel.findById(request.params.secondaryschool_id, function (error, secondaryschool) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            secondaryschool.name = request.body.secondaryschool.name;
+            secondaryschool.student = request.body.secondaryschool.student;
+
+            secondaryschool.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({secondaryschool: secondaryschool});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    SecondaryschoolModel.findByIdAndRemove(request.params.secondaryschool_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({secondaryschool: deleted});
+            };
+        }
+        );
+});
+// END ADDED MM
+
+
+// ADDED MM
+app.route('/highschoolcoursesmarks')
+.post(function (request, response) {
+    var highschoolcoursesmark = new HighschoolcoursesmarkModel(request.body.highschoolcoursesmark);
+    highschoolcoursesmark.save(function (error) {
+        if (error) response.send(error);
+        response.json({highschoolcoursesmark: highschoolcoursesmark});
+    });
+})
+.get(function (request, response) {
+    var highschoolcoursesmark = request.query.highschoolcoursesmark;
+    var highschoolsubject = request.query.highschoolsubject;
+    if(highschoolsubject){
+        HighschoolcouresesmarkModel.find({"highschoolsubject":highschoolsubject}, function (error, highschoolcoursesmarks) {
+            if (error) response.send(error);
+            response.json({highschoolcoursesmark: highschoolcoursesmarks});
+        });
+    }
+    else {
+        HighschoolcouresesmarkModel.find(function (error, highschoolcoursesmarks) {
+            if (error) response.send(error);
+            response.json({highschoolcoursesmark: highschoolcoursesmarks});
+        });
+    } 
+});
+
+app.route('/highschoolcoursesmarks/:highschoolcoursesmark_id')
+.get(function (request, response) {
+    HighschoolcoursesmarkModel.findById(request.params.highschoolcoursesmark_id, function (error, highschoolcoursesmark) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({highschoolcoursesmark: highschoolcoursesmark});
+        }
+    });
+})
+.put(function (request, response) {
+    HighschoolcoursesmarkModel.findById(request.params.highschoolcoursesmark_id, function (error, highschoolcoursesmark) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            highschoolcoursesmark.level = request.body.highschoolcoursesmark.level;
+            highschoolcoursesmark.source = request.body.highschoolcoursesmark.source;
+            highschoolcoursesmark.unit = request.body.highschoolcoursesmark.unit;
+            highschoolcoursesmark.grade = request.body.highschoolcoursesmark.grade;
+            highschoolcoursesmark.secondaryschool = request.body.highschoolcoursesmark.secondaryschool;
+
+            highschoolcoursesmark.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({highschoolcoursesmark: highschoolcoursesmark});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    HighschoolcoursesmarkModel.findByIdAndRemove(request.params.highschoolcoursesmark_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({highschoolcoursesmark: deleted});
+            };
+        }
+        );
+});
+// END ADDED
+
+
+// ADDED MM
+app.route('/highschoolsubjects')
+.post(function (request, response) {
+    var highschoolsubject = new HighschoolsubjectModel(request.body.highschoolsubject);
+    highschoolsubject.save(function (error) {
+        if (error) response.send(error);
+        response.json({highschoolsubject: highschoolsubject});
+    });
+})
+.get(function (request, response) {
+    var highschoolsubject = request.query.highschoolsubject;
+    if (!highschoolsubject) {
+        HighschoolsubjectModel.find(function (error, highschoolsubjects) {
+            if (error) response.send(error);
+            response.json({highschoolsubject: highschoolsubjects});
+        });
+    } 
+});
+
+app.route('/highschoolsubjects/:highschoolsubject_id')
+.get(function (request, response) {
+    HighschoolsubjectModel.findById(request.params.highschoolsubject_id, function (error, highschoolsubject) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({highschoolsubject: highschoolsubject});
+        }
+    });
+})
+.put(function (request, response) {
+    HighschoolsubjectModel.findById(request.params.highschoolsubject_id, function (error, highschoolsubject) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            highschoolsubject.name = request.body.highschoolsubject.name;
+            highschoolsubject.description = request.body.highschoolsubject.description;
+
+            highschoolsubject.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({highschoolsubject: highschoolsubject});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    HighschoolsubjectModel.findByIdAndRemove(request.params.highschoolsubject_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({highschoolsubject: deleted});
+            };
+        }
+        );
+});
+// END ADDED
+
+// ADDED MM
+app.route('/scholarandawardcodes')
+.post(function (request, response) {
+    var scholarandawardcode = new ScholarandawardcodeModel(request.body.scholarandawardcode);
+    scholarandawardcode.save(function (error) {
+        if (error) response.send(error);
+        response.json({scholarandawardcode: scholarandawardcode});
+    });
+})
+.get(function (request, response) {
+    var Scholarandawardcode = request.query.scholarandawardcode;
+    if (!Scholarandawardcode) {
+        ScholarandawardcodeModel.find(function (error, scholarandawardcodes) {
+            if (error) response.send(error);
+            response.json({scholarandawardcode: scholarandawardcodes});
+        });
+    }
+});
+
+app.route('/scholarandawardcodes/:scholarandawardcode_id')
+.get(function (request, response) {
+    ScholarandawardcodeModel.findById(request.params.scholarandawardcode_id, function (error, scholarandawardcode) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            response.json({scholarandawardcode: scholarandawardcode});
+        }
+    });
+})
+.put(function (request, response) {
+    ScholarandawardcodeModel.findById(request.params.scholarandawardcode_id, function (error, scholarandawardcode) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            scholarandawardcode.name = request.body.scholarandawardcode.name;
+            scholarandawardcode.student = request.body.scholarandawardcode.student;
+
+            scholarandawardcode.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({scholarandawardcode: scholarandawardcode});
+                }
+            });
+        }
+    });
+})
+.delete(function (request, response) {
+    ScholarandawardcodeModel.findByIdAndRemove(request.params.scholarandawardcode_id,
+        function (error, deleted) {
+            if (!error) {
+                response.json({scholarandawardcode: deleted});
+            };
+        }
+        );
+});
+// END ADDED MM
+
 
 app.listen(7700, function () {
     console.log('Listening on port 7700');
