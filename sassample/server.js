@@ -3,6 +3,7 @@ var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var logger = require('./logger');
 
+/*ADDED*/
 //remove all residencies and students from SASmongodb.js
 //change mongoose on sasmongodb to createConnection(..sasdb)
 //replace all node modules
@@ -14,6 +15,7 @@ var rolePermissions = require('./routes/rolePermissions');
 var passwords = require('./routes/passwords');
 var logins = require('./routes/logins');
 var roots = require('./routes/roots');
+/*END ADDED*/
 
 mongoose.connect('mongodb://localhost/sasdb');
 
@@ -28,6 +30,7 @@ app.use(function (request, response, next) {
 
 app.use(logger);
 
+/*ADDED*/
 app.use('/users', users);
 app.use('/roleCodes', roleCodes);
 app.use('/userRoles', userRoles);
@@ -35,6 +38,7 @@ app.use('/rolePermissions', rolePermissions);
 app.use('/passwords', passwords);
 app.use('/logins', logins);
 app.use('/roots', roots);
+/*END ADDED*/
 
 
 
@@ -48,6 +52,7 @@ var studentsSchema = mongoose.Schema(
     firstName: String,
     lastName: String,
     DOB: String,
+    cumAvg: String,
     resInfo: {type: mongoose.Schema.ObjectId, ref: 'ResidencyModel'},
     gender: {type: mongoose.Schema.ObjectId, ref: 'GenderModel'},
     country: {type: mongoose.Schema.ObjectId, ref: 'CountryModel'},
@@ -58,7 +63,7 @@ var studentsSchema = mongoose.Schema(
     distributionresults: [{type: mongoose.Schema.ObjectId, ref: ('DistributionresultModel')}],
     itrprograms: [{type: mongoose.Schema.ObjectId,ref: 'ItrprogramModel'}],
 
-    // ADDED MM
+        // ADDED MM
     hSchool: [{type: mongoose.Schema.ObjectId, ref: ('SecondaryschoolModel')}],
     awardInfo: [{type: mongoose.Schema.ObjectId, ref: ('ScholarandawardcodeModel')}],
     highschooladmissionaverage: {type: mongoose.Schema.ObjectId, ref: 'HighschooladmissionaverageModel'},
@@ -214,6 +219,17 @@ var logicalexpressionSchema = mongoose.Schema(
 }
 );
 
+var programplacementSchema = mongoose.Schema(
+{
+    academicprogramcode: {type:mongoose.Schema.ObjectId, ref: 'AcademicprogramcodeModel'},
+    distributionresult: {type: mongoose.Schema.ObjectId, ref: 'DistributionresultModel'},
+    commentcode: {type: mongoose.Schema.ObjectId, ref: 'CommentcodeModel'},
+    student: {type: mongoose.Schema.ObjectId, ref: 'StudentsModel'},
+    choice: String,
+    override:String
+}
+);
+
 // ADDED MM
 var secondaryschoolSchema = mongoose.Schema(
 {
@@ -270,78 +286,6 @@ var basisofadmissioncodeSchema = mongoose.Schema(
 });
 // END ADDED MM
 
-/*ADDED ALAN*/
-/*var usersSchema = mongoose.Schema(
-    {
-        firstName: String,
-        lastName: String,
-        email: String,
-        enabled: Boolean,
-        userShadow: {type: mongoose.Schema.ObjectId, ref: ('PasswordsModel')},
-        userRoles: [{type: mongoose.Schema.ObjectId, ref: 'UserRoleModel'}]
-    }
-);
-var passwordSchema = mongoose.Schema(
-    {
-        userName: String,
-        salt: String,
-        encryptedPassword: String,
-        userAccountExpiryDate: Date,
-        passwordMustChanged : Boolean,
-        passwordReset: Boolean,
-        user: {type: mongoose.Schema.ObjectId, ref: ('UsersModel')}
-    }
-);
-var loginSchema = mongoose.Schema(
-    {
-        userName: String,
-        password: String,
-        nonce: String,
-        response: String,
-        token: String,
-        requestType: String,
-        wrongUserName: Boolean,
-        wrongPassword: Boolean,
-        passwordMustChanged: Boolean,
-        passwordReset: Boolean,
-        loginFailed: Boolean,
-        sessionIsActive: Boolean
-    }
-);
-var rootSchema = mongoose.Schema(
-    {
-        password: String,
-        nonce: String,
-        response: String,
-        wrongPassword: Boolean,
-        sessionIsActive: Boolean
-    }
-);
-var userRoleSchema = mongoose.Schema(
-    {
-        dateAssigned: Date,
-        user: {type: mongoose.Schema.ObjectId, ref: ('UsersModel')},
-        role: {type: mongoose.Schema.ObjectId, ref: ('RoleCodeModel')}
-    }
-);
-var roleCodeSchema = mongoose.Schema(
-    {
-        name: String,
-        userRoles: [{type: mongoose.Schema.ObjectId, ref: 'UserRoleModel'}],
-        features: [{type: mongoose.Schema.ObjectId, ref: 'RolePermissionModel'}]
-    }
-);
-var rolePermissionSchema = mongoose.Schema(
-    {
-        code: String,
-        sysFeature: String,
-        roleCodes: [{type: mongoose.Schema.ObjectId, ref: ('RoleCodeModel')}]
-    }
-);*/
-/*END ADDED ALAN*/
-
-
-
 var StudentsModel = mongoose.model('student', studentsSchema);
 var ResidencyModel = mongoose.model('residency', residencySchema);
 var GenderModel = mongoose.model('gender', genderSchema);
@@ -363,6 +307,7 @@ var FacultyModel = mongoose.model('faculty', facultySchema);
 var DepartmentModel = mongoose.model('department', departmentSchema);
 var AdmissionruleModel = mongoose.model('admissionrule', admissionruleSchema);
 var LogicalexpressionModel = mongoose.model('logicalexpression', logicalexpressionSchema);
+var ProgramplacementModel = mongoose.model('programplacement',programplacementSchema);
 
 // ADDED MM
 var SecondaryschoolModel = mongoose.model('secondaryschool', secondaryschoolSchema);
@@ -374,6 +319,64 @@ var BasisofadmissionModel = mongoose.model('basisofadmission', basisofadmissionS
 var BasisofadmissioncodeModel = mongoose.model('basisofadmissioncode',basisofadmissioncodeSchema);
 // END ADDED MM
 
+app.route('/programplacements')
+.post(function (request, response) {
+    var placed = new ProgramplacementModel(request.body.programplacement);
+    placed.save(function (error) {
+        if (error) response.send(error);
+        response.json({programplacement: programplacements});
+    });
+})
+.get(function (request, response) {
+    var distributionresult = request.query.distributionresult;
+    if (distributionresult){
+        ProgramplacementModel.find({"distributionresult": distributionresult}, function (error, programplacements) {
+        if (error) response.send(error);
+        response.json({programplacement: programplacements});
+    });
+    }
+    else{
+        ProgramplacementModel.find(function (error, programplacements) {
+            if (error) response.send(error);
+            response.json({programplacement: programplacements});
+        });
+    }
+});
+
+app.route('/programplacements/:programplacement_id')
+    .get(function (request, response) {
+        ProgramplacementModel.findById(request.params.programplacement_id, function (error, programplacement) {
+            if (error) {
+                response.send({error: error});
+            }
+            else {
+                response.json({programplacement: programplacement});
+            }
+        });
+    })
+    .put(function (request, response) {
+        ProgramplacementModel.findById(request.params.programplacement_id, function (error, programplacement) {
+            if (error) {
+                response.send({error: error});
+            }
+            else {
+                programplacement.academicprogramcode = request.body.programplacement.academicprogramcode;
+                programplacement.override="true";
+                programplacement.choice="Modified";
+
+                programplacement.save(function (error) {
+                    if (error) {
+                        response.send({error: error});
+                    }
+                    else {
+                        response.json({programplacement: programplacement});
+                    }
+                });
+            }
+        });
+    })
+
+
 app.route('/students')
 .post(function (request, response) {
     var student = new StudentsModel(request.body.student);
@@ -383,57 +386,638 @@ app.route('/students')
     });
 })
 .get(function (request, response) {
-    var Student = request.query.student;
-    if (!Student) {
+    var number = request.query.number;
+    var generate = request.query.generate;
+    if (generate) 
+    {
+        var returnMessage="";
+        var allStudents= [];
+        var allItrprograms=[];
+        var allAcademicprogramcodes=[];
+        var allLogicalExpressions=[];
+        var allGrades=[];
+        var allCourses=[];
+        var allProgramplacements=[];
+        var Distributionresult;
+        StudentsModel.find(function (error, students) {
+
+            var dateObj = new Date();
+            var month = dateObj.getUTCMonth() + 1;
+            var day = dateObj.getUTCDate();
+            var year = dateObj.getUTCFullYear();
+            var newdate = day + "/" + month + "/" + year;
+            Distributionresult= new DistributionresultModel({
+                date:newdate
+            });
+            Distributionresult.save();
+            for (var i = 0; i < students.length; i++)
+            {
+                allStudents.push(students[i]);
+            }
+            var cleanedStudents=new Array(allStudents.length);
+            for(var i=0;i<allStudents.length;i++)
+            {
+              cleanedStudents[i]=new Array(4);
+              cleanedStudents[i][0]=allStudents[i].id;
+              cleanedStudents[i][1]=allStudents[i].number;
+              cleanedStudents[i][2]=allStudents[i].cumAvg;
+              cleanedStudents[i][3]=allStudents[i];
+              if(cleanedStudents[i][2]=="")
+              {
+                cleanedStudents[i][2]=0;
+              }
+            }
+
+            //insertion sort
+            for(var i = 0; i < cleanedStudents.length; i++) 
+            {
+              var tmp = cleanedStudents[i];
+              for(var j = i - 1; j >= 0 && (parseFloat(cleanedStudents[j][2]) < parseFloat(tmp[2])); j--) 
+              {
+                cleanedStudents[j+1] = cleanedStudents[j];
+              }
+              cleanedStudents[j+1] = tmp;
+            }
+
+            // //print
+            // for(var i=0;i<cleanedStudents.length;i++)
+            // {
+            //     console.log(cleanedStudents[i]);
+            // }
+
+            ItrprogramModel.find(function (error, itrprograms) {
+                for (var i = 0; i < itrprograms.length; i++)
+                {
+                    allItrprograms.push(itrprograms[i]);
+                }
+
+                //find all itrprograms
+                var cleanedItr=new Array(allItrprograms.length);
+                for(var i=0;i<allItrprograms.length;i++)
+                {
+                  cleanedItr[i]=new Array(6);
+                  cleanedItr[i][0]=allItrprograms[i].student;
+                  cleanedItr[i][1]=allItrprograms[i].order;
+                  cleanedItr[i][2]=allItrprograms[i].academicprogramcode;
+                }
+
+                // //print
+                // for(var i=0;i<cleanedItr.length;i++)
+                // {
+                //   console.log(cleanedItr[i]);
+                // }
+                AcademicprogramcodeModel.find(function (error, academicprogramcodes) 
+                {
+                    for (var i = 0; i < academicprogramcodes.length; i++)
+                    {
+                        allAcademicprogramcodes.push(academicprogramcodes[i]);
+                    }
+                    for(var i=0;i<cleanedItr.length;i++)
+                    {
+                        for(var j=0;j<allAcademicprogramcodes.length;j++)
+                        {
+                            if(allAcademicprogramcodes[j].id==cleanedItr[i][2])
+                            {
+                                cleanedItr[i][3]=allAcademicprogramcodes[j].admissionrule;
+                                cleanedItr[i][4]=allAcademicprogramcodes[j].name;
+                            }
+                        }
+                        
+                    }
+                    LogicalexpressionModel.find(function (error, logicalexpressions) 
+                    {
+                        for (var i = 0; i < logicalexpressions.length; i++)
+                        {
+                            allLogicalExpressions.push(logicalexpressions[i]);
+                        }
+                        for(var i=0;i<cleanedItr.length;i++)
+                        {
+                            var holder=new Array(100);
+                            var holder1=new Array(100);
+                            var countHolder1=0;
+                            var countOfLogicalExpressions=0;
+                            for(var j=0;j<allLogicalExpressions.length;j++)
+                            {
+                                if(allLogicalExpressions[j].admissionrule.toString()==cleanedItr[i][3].toString())
+                                {
+
+                                    //Parse the logical expressions
+                                    var splitter = allLogicalExpressions[j].booleanExp.split("");
+
+                                    var ExpressionArray=new Array(10);
+                                    var tempExpression;
+                                    //console.log(splitter);
+                                    var open=0;
+                                    var removed=false;
+                                    var hasBrackets=true;
+                                    var pass=0;
+                                    while(hasBrackets)
+                                    {
+                                        removed=false;
+                                        hasBrackets=false;
+                                        for(var r=0;r<splitter.length;r++)
+                                        {
+                                            if(splitter[r]=='('&&!removed)
+                                            {
+                                                splitter[r]='';
+                                                removed=true;
+                                                open++;
+                                            }
+                                            else if(splitter[r]=='(')
+                                            {
+                                                open++;
+                                            }
+                                            else if(removed&&splitter[r]==')')
+                                            {
+                                                open--;
+                                                if(open==0)
+                                                {
+                                                    splitter[r]='';
+
+                                                    //leave
+                                                    r=splitter.length;
+                                                    pass++;
+                                                }
+                                            }
+                                        }
+                                        //console.log("Pass:"+pass+" "+splitter.join(""));
+
+                                        // //check if there are still brackets
+                                        // for(var r=0;r<splitter.length;r++)
+                                        // {
+                                        //     if(splitter[r]=='('||splitter[r]==')')
+                                        //     {
+                                        //         hasBrackets=true;
+                                        //     }
+
+                                        // }
+
+                                        for(var r=0;r<splitter.length;r++)
+                                        {
+                                            if(splitter[r]=='('||splitter[r]==')')
+                                            {
+                                                //done
+                                                hasBrackets=true;
+                                                r=splitter.length;
+                                            }
+                                            else if(splitter.length>r+2)
+                                            {
+                                                if(splitter[r]=='&'&&splitter[r+1]=='&')
+                                                {
+                                                    //console.log("AND ELEMENT:"+splitter.join("").substring(0,r-3));
+                                                    holder1[countHolder1]=splitter.join("").substring(0,r-3);
+                                                    countHolder1++;
+
+                                                    splitter=splitter.join("").substring(r-3,splitter.length).split("");
+                                                }
+                                            }
+                                        }
+                                        if(hasBrackets==false)
+                                        {
+                                            //console.log("DONE ELEMENT"+splitter.join(""));
+                                            holder1[countHolder1]=splitter.join("");
+                                            countHolder1++;
+                                        }
+                                    }
+
+                                    for(var r=0;r<countHolder1;r++)
+                                    {
+                                        //
+                                        var toHolder=holder1[r].split("&&");
+                                        for(var w=0;w<toHolder.length;w++)
+                                        {
+                                            if(toHolder[w].length>0)
+                                            {
+                                                toHolder[w]=toHolder[w].replace('(','');
+                                                toHolder[w]=toHolder[w].replace(')','');
+                                                if(!toHolder[w].replace(' ','').length==0)
+                                                {
+                                                    //console.log("TO HOLDER"+w+toHolder[w]);
+                                                    holder[countOfLogicalExpressions]=toHolder[w];
+                                                    countOfLogicalExpressions++;
+                                                }
+                                            }
+
+                                            // holder[countOfLogicalExpressions]=toHolder[w];
+                                            // countOfLogicalExpressions++;
+                                        }
+                                    }
+                                    
+                                    //holder[countOfLogicalExpressions]=allLogicalExpressions[j].booleanExp;
+                                    //countOfLogicalExpressions++;
+                                }
+                            }
+                            cleanedItr[i][5]=new Array(countOfLogicalExpressions);
+                            for(var j=0;j<countOfLogicalExpressions;j++)
+                            {
+                                cleanedItr[i][5][j]=holder[j];
+                            }
+                            
+                        }
+                        // //print
+                        // for(var i=0;i<cleanedItr.length;i++)
+                        // {
+                        //   console.log(cleanedItr[i]);
+                        // }
+                        GradeModel.find(function (error, grades) 
+                        {
+                            for (var i = 0; i < grades.length; i++)
+                            {
+                                allGrades.push(grades[i]);
+                            }
+                            var cleanedGrades= new Array(grades.length);
+                            for(var i=0;i<allGrades.length;i++)
+                            {
+                              cleanedGrades[i]=new Array(3);
+                              cleanedGrades[i][0]=allGrades[i].student;
+                              cleanedGrades[i][1]=allGrades[i].coursecode;
+                              cleanedGrades[i][2]=allGrades[i].mark;
+                            }
+
+                            // //print
+                            // for(var i=0;i<cleanedGrades.length;i++)
+                            // {
+                            //     console.log(cleanedGrades[i]);
+                            // }
+
+                            CoursecodeModel.find(function (error, courses) 
+                            {
+                                for (var i = 0; i < courses.length; i++)
+                                {
+                                    allCourses.push(courses[i]);
+                                }
+                                var cleanedCourses= new Array(courses.length);
+
+                                for(var i=0;i<allCourses.length;i++)
+                                {
+                                  cleanedCourses[i]=new Array(3);
+                                  cleanedCourses[i][0]=allCourses[i].id;
+                                  cleanedCourses[i][1]=allCourses[i].code;
+                                  cleanedCourses[i][2]=allCourses[i].number;
+                                }
+                                // //print
+                                // for(var i=0;i<cleanedCourses.length;i++)
+                                // {
+                                //     console.log(cleanedCourses[i]);
+                                // }
+
+                                //Now handle the students
+                                for(var i=0;i<cleanedStudents.length;i++)
+                                {
+                                    //find the students cleanedItrlist
+                                    var studentsChoice= new Array(11);
+                                    var hasItr=false;
+                                    for(var j=0;j<cleanedItr.length;j++)
+                                    {
+                                        if(cleanedStudents[i][0].toString()==cleanedItr[j][0].toString())
+                                        {
+                                            var rank=parseInt(cleanedItr[j][1]);
+                                            studentsChoice[rank]=new Array(6);
+                                            for(var p=0;p<6;p++)
+                                            {
+                                                studentsChoice[rank][p]=cleanedItr[j][p];
+                                            }
+                                            hasItr=true;
+                                        }
+                                    }
+                                    //console.log(cleanedStudents[i][1]+": filled out intent to register?"+hasItr);
+                                    if(hasItr)
+                                    {
+                                        var notPlaced=true;
+                                        for(var q=1;q<11;q++)
+                                        {
+                                            if(notPlaced)
+                                            {
+                                                //check criteria
+                                                var accepted=false;
+
+                                                for(var l=0;l<studentsChoice[q][5].length;l++)
+                                                {
+                                                //     //console.log("On boolean:"+l+" - "+studentsChoice[q][5][l]);
+                                                    var splitBool1=studentsChoice[q][5][l].split("||");
+                                                    //console.log(splitBool1);
+
+                                                    
+                                                    //check each part of the criteria part
+                                                    for(var g=0;g<splitBool1.length;g++)
+                                                    {
+                                                        var splitBool=splitBool1[g].split(" ");
+                                                        console.log(splitBool);
+
+                                                        //find first non empty element
+                                                        var index;
+                                                        for(var m=0;m<splitBool.length;m++)
+                                                        {
+                                                            if(splitBool[m]!="")
+                                                            {
+                                                                index=m;
+                                                                m=splitBool.length;
+                                                            }
+                                                        }
+                                                        var code=splitBool[index];//AVG
+                                                        var operator=splitBool[index+2];//operator
+                                                        var requiredMark=splitBool[index+3];
+                                                        var number=splitBool[index+1];
+                                                        // console.log("code "+code+"\n");
+                                                        // console.log("operator "+operator+"\n");
+                                                        // console.log("required "+requiredMark+"\n");
+                                                        // console.log("number"+number+"\n");
+                                                        //var consideration=splitBool[1];//AVG
+                                                        //var studentsMark;
+                                                        //var operator=splitBool[3];//operator
+                                                        //var requiredMark=splitBool[4];//mark
+                                                        if(code=="AVG")
+                                                        {
+                                                            //then just use average
+                                                            studentsMark=cleanedStudents[i][2];
+                                                        }
+                                                        else
+                                                        {
+                                                            //find students grade in that course...
+                                                            //console.log(splitBool);
+                                                            //var code=splitBool[1];
+                                                            //var number=splitBool[2];
+                                                            var number1="XXXX";
+                                                            //var ABcourse=false;
+                                                            //console.log("Code: "+code+" - Number:"+number);
+                                                            if(number.includes("A"))
+                                                            {
+                                                                //console.log("Includes A");
+                                                                number1=number.replace("A","B");
+                                                                //ABcourse=true;
+                                                                //console.log(number);
+                                                            }
+                                                            else if(number.includes("B"))
+                                                            {
+                                                                //console.log("Includes B");
+                                                                number1=number.replace("B","A");
+                                                                //ABcourse=true;
+                                                                //console.log(number);
+                                                            }
+                                                            //console.log("Code: "+code+" - Number:"+number1);
+                                                            var courseId;
+                                                            var courseId1="XXXX";
+
+                                                            //find course id
+                                                            for(var f=0;f<cleanedCourses.length;f++)
+                                                            {
+                                                                if(cleanedCourses[f][1]==code&&cleanedCourses[f][2]==number)
+                                                                {
+                                                                    courseId=cleanedCourses[f][0];
+                                                                }
+                                                                if(cleanedCourses[f][1]==code&&cleanedCourses[f][2]==number1)
+                                                                {
+                                                                    courseId1=cleanedCourses[f][0];
+                                                                }
+                                                            }
+
+                                                            //find students mark
+                                                            for(var f=0;f<cleanedGrades.length;f++)
+                                                            {
+                                                                if(cleanedGrades[f][1].toString()==courseId&&cleanedStudents[i][0].toString()==cleanedGrades[f][0].toString()||cleanedGrades[f][1].toString()==courseId1&&cleanedStudents[i][0].toString()==cleanedGrades[f][0].toString())
+                                                                {
+                                                                    studentsMark=cleanedGrades[f][2];
+                                                                }
+                                                            }
+                                                        }
+                                                        switch(operator)
+                                                        {
+                                                            case">":
+                                                                if(!accepted&&l==0)
+                                                                {
+                                                                    if(studentsMark>requiredMark)
+                                                                    {
+                                                                        accepted=true;
+                                                                    }
+                                                                }
+                                                                else if(accepted)
+                                                                {
+                                                                    if(studentsMark>requiredMark)
+                                                                    {
+
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        accepted=false;
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+
+                                                                }
+                                                            break;
+
+                                                            case">=":
+                                                                if(!accepted&&l==0)
+                                                                {
+                                                                    if(studentsMark>=requiredMark)
+                                                                    {
+                                                                        accepted=true;
+                                                                    }
+                                                                }
+                                                                else if(accepted)
+                                                                {
+                                                                    if(studentsMark>=requiredMark)
+                                                                    {
+
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        accepted=false;
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+
+                                                                }
+                                                            break;
+
+                                                            case"<":
+                                                                if(!accepted&&l==0)
+                                                                {
+                                                                    if(studentsMark<requiredMark)
+                                                                    {
+                                                                        accepted=true;
+                                                                    }
+                                                                }
+                                                                else if(accepted)
+                                                                {
+                                                                    if(studentsMark<requiredMark)
+                                                                    {
+
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        accepted=false;
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+
+                                                                }
+                                                            break;
+
+                                                            case"<=":
+                                                                if(!accepted&&l==0)
+                                                                {
+                                                                    if(studentsMark<=requiredMark)
+                                                                    {
+                                                                        accepted=true;
+                                                                    }
+                                                                }
+                                                                else if(accepted)
+                                                                {
+                                                                    if(studentsMark<=requiredMark)
+                                                                    {
+                                                                        
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        accepted=false;
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+
+                                                                }
+                                                            break;
+
+                                                            case"=":
+                                                                if(!accepted&&l==0)
+                                                                {
+                                                                    if(studentsMark==requiredMark)
+                                                                    {
+                                                                        accepted=true;
+                                                                    }
+                                                                }
+                                                                else if(accepted)
+                                                                {
+                                                                    if(studentsMark==requiredMark)
+                                                                    {
+
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        accepted=false;
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    //reject
+                                                                    //break
+                                                                }
+                                                            break;
+
+                                                            case"!=":
+                                                                if(!accepted&&l==0)
+                                                                {
+                                                                    if(studentsMark!=requiredMark)
+                                                                    {
+                                                                        accepted=true;
+                                                                    }
+                                                                }
+                                                                else if(accepted)
+                                                                {
+                                                                    if(studentsMark!=requiredMark)
+                                                                    {
+
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        accepted=false;
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    //reject
+                                                                    //break
+                                                                }
+                                                            break;
+                                                        }
+
+                                                        //One part of the Or is true move on
+                                                        if(accepted==true)
+                                                        {
+                                                            //leave loop
+                                                            g=g.length;
+                                                        }
+                                                    }
+                                                }
+                                                if(accepted)
+                                                {
+                                                    //returnMessage+="Student: "+cleanedStudents[i][1]+" Was placed into: "+studentsChoice[q][4]+" - choice:"+studentsChoice[q][1]+"\n";
+                                                    var ProgramPlacement = new ProgramplacementModel({
+                                                      academicprogramcode: studentsChoice[q][2],
+                                                      distributionresult: Distributionresult,
+                                                      commentcode: null,
+                                                      student: cleanedStudents[i][3],
+                                                      choice: studentsChoice[q][1],
+                                                      override:"No"
+                                                    });
+                                                    ProgramPlacement.save();
+                                                    notPlaced=false;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                break;
+                                            }
+                                            
+                                        }
+                                        if(notPlaced)
+                                        {
+                                            //console.log("Student: "+cleanedStudents[i][1]+" is not eligibile for any program");
+                                            //returnMessage+="Student: "+cleanedStudents[i][1]+" is not eligibile for any program ("+cleanedStudents[i][2]+") \n";
+                                            var ProgramPlacement = new ProgramplacementModel({
+                                              academicprogramcode: null,
+                                              distributionresult: Distributionresult,
+                                              commentcode: null,
+                                              student: cleanedStudents[i][3],
+                                              choice: "INELIGIBLE",
+                                              override:"No"
+                                            });
+                                        ProgramPlacement.save();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //console.log("Student: "+cleanedStudents[i][1]+" Was not placed for due to incomplete ITR");
+                                        //returnMessage+="Student: "+cleanedStudents[i][1]+" Was not placed for due to incomplete ITR ("+cleanedStudents[i][2]+") \n";
+                                        var ProgramPlacement = new ProgramplacementModel({
+                                          academicprogramcode: null,
+                                          distributionresult: Distributionresult,
+                                          commentcode: null,
+                                          student: cleanedStudents[i][3],
+                                          choice: "No ITR",
+                                          override:"No"
+                                        });
+                                        ProgramPlacement.save();
+                                    }
+                                }
+
+                            allStudents[0].number=returnMessage;
+                            response.json({student:allStudents[0]});
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    }
+    else if (number) 
+    {
+        StudentsModel.find({"number": number}, function (error, students) {
+            if (error) response.send(error);
+            response.json({student: students});
+        });
+    }
+            
+    else{
         StudentsModel.find(function (error, students) {
             if (error) response.send(error);
             response.json({student: students});
         });
     }
-// } else {
-//     if (Student == "grade"){
-//         StudentsModel.find({"grade": request.query.grade}, function (error, students) {
-//             if (error) response.send(error);
-//             response.json({student: students});
-//         });
-//     }
-//     else if (Student == "residency"){
-//         StudentsModel.find({"residency": request.query.residency}, function (error, students) {
-//             if (error) response.send(error);
-//             response.json({student: students});
-//         });
-//     }
-//     else if(Student == "gender"){
-//         StudentsModel.find({"gender": request.query.gender}, function (error, students) {
-//             if (error) response.send(error);
-//             response.json({student: students});
-//         });
-//     }
-//     else if(Student == "country"){
-//         StudentsModel.find({"country": request.query.country}, function (error, students) {
-//             if (error) response.send(error);
-//             response.json({student: students});
-//         });
-//     }
-//     else if(Student == "province"){
-//         StudentsModel.find({"province": request.query.province}, function (error, students) {
-//             if (error) response.send(error);
-//             response.json({student: students});
-//         });
-//     }
-//     else if(Student == "city"){
-//         StudentsModel.find({"city": request.query.city}, function (error, students) {
-//             if (error) response.send(error);
-//             response.json({student: students});
-//         });
-//     }
-//     else if(Student == "academicload"){
-//         StudentsModel.find({"academicload": request.query.academicload}, function (error, students) {
-//             if (error) response.send(error);
-//             response.json({student: students});
-//         });
-//     }
-// }
 });
 
 app.route('/students/:student_id')
@@ -457,6 +1041,7 @@ app.route('/students/:student_id')
             student.firstName = request.body.student.firstName;
             student.lastName = request.body.student.lastName;
             student.DOB = request.body.student.DOB;
+            student.cumAvg = request.body.student.cumAvg;
             student.resInfo = request.body.student.resInfo;
             student.gender = request.body.student.gender;
             student.country = request.body.student.country;
@@ -485,6 +1070,7 @@ app.route('/students/:student_id')
         );
 });
 
+//added - GRADES
 app.route('/grades')
 .post(function (request, response) {
     var grade = new GradeModel(request.body.grade);
@@ -567,7 +1153,9 @@ app.route('/grades')
             }
             );
     });
+//end added - GRADES
 
+//added - COURSECODES
 app.route('/coursecodes')
 .post(function (request, response) {
     var coursecode = new CoursecodeModel(request.body.coursecode);
@@ -577,18 +1165,20 @@ app.route('/coursecodes')
     });
 })
 .get(function (request, response) {
-    var Grade = request.query.filter;
-    if (!Grade) {
+    var number = request.query.number;
+    var code = request.query.code;
+    if(number && code){
+        CoursecodeModel.find({"number": number, "code": code}, function (error, coursecodes) {
+            if (error) response.send(error);
+            response.json({coursecode: coursecodes});
+        });
+    }
+    else{
         CoursecodeModel.find(function (error, coursecodes) {
             if (error) response.send(error);
             response.json({coursecode: coursecodes});
         });
-    } else {
-        PermissionTypeModel.find({"grade": Grade.grade}, function (error, grades) {
-            if (error) response.send(error);
-            response.json({coursecode: grades});
-        });
-    }
+    } 
 });
 
 app.route('/coursecodes/:coursecode_id')
@@ -630,7 +1220,9 @@ app.route('/coursecodes/:coursecode_id')
         }
         );
 });;
+//end added - COURSECODES
 
+//added - PROGRAMRECORDS
 app.route('/programrecords')
 .post(function (request, response) {
     var programrecord = new ProgramrecordModel(request.body.programrecord);
@@ -640,14 +1232,12 @@ app.route('/programrecords')
     });
 })
 .get(function (request, response) {
-    var Programrecord = request.query.programrecord;
-    if (!Programrecord) {
-        ProgramrecordModel.find(function (error, programrecords) {
-            if (error) response.send(error);
-            response.json({programrecord: programrecords});
-        });
-    }
+    ProgramrecordModel.find(function (error, programrecords) {
+        if (error) response.send(error);
+        response.json({programrecord: programrecords});
+    });
 });
+
 
 app.route('/programrecords/:programrecord_id')
 .get(function (request, response) {
@@ -692,7 +1282,9 @@ app.route('/programrecords/:programrecord_id')
         }
         );
 });
+//end added - PROGRAMRECORDS
 
+//added - DEGREECODES
 app.route('/degreecodes')
 .post(function (request, response) {
     var degreecode = new DegreecodeModel(request.body.degreecode);
@@ -702,16 +1294,17 @@ app.route('/degreecodes')
     });
 })
 .get(function (request, response) {
-    var Programrecord = request.query.filter;
-    if (!Programrecord) {
-        DegreecodeModel.find(function (error, degreecodes) {
+    var name = request.query.name;
+    if(name) {
+        DegreecodeModel.find({"name": name}, function (error, degreecodes) {
             if (error) response.send(error);
             response.json({degreecode: degreecodes});
         });
-    } else {
-        PermissionTypeModel.find({"programrecord": Programrecord.programrecord}, function (error, programrecords) {
+    }
+    else {
+        DegreecodeModel.find(function (error, degreecodes) {
             if (error) response.send(error);
-            response.json({degreecode: programrecords});
+            response.json({degreecode: degreecodes});
         });
     }
 });
@@ -752,7 +1345,9 @@ app.route('/degreecodes/:degreecode_id')
         }
         );
 });
+//end added - DEGREECODES
 
+//added - TERMCODES
 app.route('/termcodes')
 .post(function (request, response) {
     var termcode = new TermcodeModel(request.body.termcode);
@@ -762,16 +1357,17 @@ app.route('/termcodes')
     });
 })
 .get(function (request, response) {
-    var Programrecord = request.query.filter;
-    if (!Programrecord) {
-        TermcodeModel.find(function (error, termcodes) {
+    var name = request.query.name;
+    if(name) {
+        TermcodeModel.find({"name": name}, function (error, termcodes) {
             if (error) response.send(error);
             response.json({termcode: termcodes});
         });
-    } else {
-        PermissionTypeModel.find({"programrecord": Programrecord.programrecord}, function (error, programrecords) {
+    }
+    else {
+        TermcodeModel.find(function (error, termcodes) {
             if (error) response.send(error);
-            response.json({termcode: programrecords});
+            response.json({termcode: termcodes});
         });
     }
 });
@@ -812,7 +1408,9 @@ app.route('/termcodes/:termcode_id')
         }
         );
 });
+//end added - TERMCODES
 
+//added - DISTRIBUTIONRESULTS
 app.route('/distributionresults')
 .post(function (request, response) {
     var distributionresult = new DistributionresultModel(request.body.distributionresult);
@@ -871,7 +1469,9 @@ app.route('/distributionresults/:distributionresult_id')
         }
         );
 });
+//end added - DISTRIBUTIONRESULTS
 
+//added - COMMENTCODES
 app.route('/commentcodes')
 .post(function (request, response) {
     var commentcode = new CommentcodeModel(request.body.commentcode);
@@ -930,6 +1530,7 @@ app.route('/commentcodes/:commentcode_id')
         }
         );
 });
+//end added - COMMENTCODES
 
 app.route('/residencies')
 .post(function (request, response) {
@@ -940,16 +1541,25 @@ app.route('/residencies')
     });
 })
 .get(function (request, response) {
-    var Student = request.query.filter;
-    if (!Student) {
-        ResidencyModel.find(function (error, residencies) {
+    var student = request.query.student;
+    var name = request.query.name;
+
+    if (student) {
+        ResidencyModel.find({"student": student}, function (error, residencies) {
             if (error) response.send(error);
             response.json({residency: residencies});
         });
-    } else {
-        PermissionTypeModel.find({"student": Student.student}, function (error, students) {
+    }
+    else if (name) {
+        ResidencyModel.find({"name": name}, function (error, residencies) {
             if (error) response.send(error);
-            response.json({residency: students});
+            response.json({residency: residencies});
+        });
+    }     
+    else {
+        ResidencyModel.find(function (error, residencies) {
+            if (error) response.send(error);
+            response.json({residency: residencies});
         });
     }
 });
@@ -1000,16 +1610,25 @@ app.route('/genders')
     });
 })
 .get(function (request, response) {
-    var Student = request.query.filter;
-    if (!Student) {
-        GenderModel.find(function (error, genders) {
+    var student = request.query.student;
+    var name = request.query.name;
+
+    if (student) {
+        GenderModel.find({"student": student}, function (error, genders) {
             if (error) response.send(error);
             response.json({gender: genders});
         });
-    } else {
-        PermissionTypeModel.find({"student": Student.student}, function (error, students) {
+    }
+    else if (name) {
+        GenderModel.find({"name": name}, function (error, genders) {
             if (error) response.send(error);
-            response.json({gender: students});
+            response.json({gender: genders});
+        });
+    }     
+    else {
+        GenderModel.find(function (error, genders) {
+            if (error) response.send(error);
+            response.json({gender: genders});
         });
     }
 });
@@ -1060,33 +1679,27 @@ app.route('/countries')
     });
 })
 .get(function (request, response) {
-    var Student = request.query.filter;
-    if (!Student) {
+    var student = request.query.student;
+    var name = request.query.name;
+
+    if (student) {
+        CountryModel.find({"student": student}, function (error, countries) {
+            if (error) response.send(error);
+            response.json({country: countries});
+        });
+    }
+    else if (name) {
+        CountryModel.find({"name": name}, function (error, countries) {
+            if (error) response.send(error);
+            response.json({country: countries});
+        });
+    }     
+    else {
         CountryModel.find(function (error, countries) {
             if (error) response.send(error);
             response.json({country: countries});
         });
-    } else {
-        PermissionTypeModel.find({"student": Student.student}, function (error, students) {
-            if (error) response.send(error);
-            response.json({country: students});
-        });
     }
-
-// //added
-// var Province = request.query.filter;
-// if (!Province) {
-//     CountryModel.find(function (error, countries) {
-//         if (error) response.send(error);
-//         response.json({country: countries});
-//     });
-// } else {
-//     PermissionTypeModel.find({"province": Province.province}, function (error, provinces) {
-//         if (error) response.send(error);
-//         response.json({country: provinces});
-//     });
-// }
-// //end added
 });
 
 app.route('/countries/:country_id')
@@ -1136,35 +1749,27 @@ app.route('/provinces')
     });
 })
 .get(function (request, response) {
-    var Student = request.query.filter;
-    if (!Student) {
+    var student = request.query.student;
+    var name = request.query.name;
+
+    if (name) {
+        ProvinceModel.find({"name": name}, function (error, provinces) {
+            if (error) response.send(error);
+            response.json({province: provinces});
+        });
+    }   
+    else if (student) {
+        ProvinceModel.find({"student": student}, function (error, provinces) {
+            if (error) response.send(error);
+            response.json({province: provinces});
+        });
+    }  
+    else {
         ProvinceModel.find(function (error, provinces) {
             if (error) response.send(error);
             response.json({province: provinces});
         });
-    } else {
-        PermissionTypeModel.find({"student": Student.student}, function (error, students) {
-            if (error) response.send(error);
-            response.json({province: students});
-        });
     }
-
-// //added
-// var Province = request.query.province;
-// if (!Province) {
-//     ProvinceModel.find(function (error, provinces) {
-//         if (error) response.send(error);
-//         response.json({province: provinces});
-//     });
-// } else {
-//     if(Province == "country"){
-//         ProvinceModel.find({"country": request.query.country}, function (error, provinces) {
-//             if (error) response.send(error);
-//             response.json({province: provinces});
-//         });
-//     }
-// }
-// //end added
 });
 
 app.route('/provinces/:province_id')
@@ -1215,16 +1820,25 @@ app.route('/cities')
     });
 })
 .get(function (request, response) {
-    var Student = request.query.filter;
-    if (!Student) {
-        CityModel.find(function (error, cities) {
+    var student = request.query.student;
+    var name = request.query.name;
+
+    if (student) {
+        CityModel.find({"student": student}, function (error, cities) {
             if (error) response.send(error);
             response.json({city: cities});
         });
-    } else {
-        PermissionTypeModel.find({"student": Student.student}, function (error, students) {
+    }
+    else if (name) {
+        CityModel.find({"name": name}, function (error, cities) {
             if (error) response.send(error);
-            response.json({city: students});
+            response.json({city: cities});
+        });
+    }     
+    else {
+        CityModel.find(function (error, cities) {
+            if (error) response.send(error);
+            response.json({city: cities});
         });
     }
 });
@@ -1275,16 +1889,25 @@ app.route('/academicloads')
     });
 })
 .get(function (request, response) {
-    var Student = request.query.filter;
-    if (!Student) {
-        AcademicloadModel.find(function (error, academicloads) {
+    var student = request.query.student;
+    var name = request.query.name;
+
+    if (student) {
+        AcademicloadModel.find({"student": student}, function (error, academicloads) {
             if (error) response.send(error);
             response.json({academicload: academicloads});
         });
-    } else {
-        PermissionTypeModel.find({"student": Student.student}, function (error, students) {
+    }
+    else if (name) {
+        AcademicloadModel.find({"name": name}, function (error, academicloads) {
             if (error) response.send(error);
-            response.json({academicload: students});
+            response.json({academicload: academicloads});
+        });
+    }     
+    else {
+        AcademicloadModel.find(function (error, academicloads) {
+            if (error) response.send(error);
+            response.json({academicload: academicloads});
         });
     }
 });
@@ -1326,6 +1949,7 @@ app.route('/academicloads/:academicload_id')
         );
 });
 
+//ADDED - ITRPROGRAMS
 app.route('/itrprograms')
 .post(function (request, response) {
     var itrprogram = new ItrprogramModel(request.body.itrprogram);
@@ -1336,7 +1960,14 @@ app.route('/itrprograms')
 })
 .get(function (request, response) {
     var itrprogram = request.query.itrprogram;
-    if (!itrprogram) {
+    var student = request.query.student;
+    if(student){
+        ItrprogramModel.find({"student": student}, function (error, itrprograms) {
+            if (error) response.send(error);
+            response.json({itrprogram: itrprograms});
+        });
+            }
+    else {
         ItrprogramModel.find(function (error, itrprograms) {
             if (error) response.send(error);
             response.json({itrprogram: itrprograms});
@@ -1344,57 +1975,99 @@ app.route('/itrprograms')
     } 
 });
 
-app.route('/itrlists/:itrlist_id')
+app.route('/itrprograms/:itrprogram_id')
 .get(function (request, response) {
-    ItrlistModel.findById(request.params.itrlist_id, function (error, itrlist) {
+    ItrprogramModel.findById(request.params.itrprogram_id, function (error, itrprogram) {
         if (error) {
             response.send({error: error});
         }
         else {
-            response.json({itrlist: itrlist});
+            response.json({itrprogram: itrprogram});
         }
     });
 })
 .put(function (request, response) {
-    ItrlistModel.findById(request.params.itrlist_id, function (error, itrlist) {
+    ItrprogramModel.findById(request.params.itrprogram_id, function (error, itrprogram) {
         if (error) {
             response.send({error: error});
         }
         else {
-            itrlist.order = request.body.itrlist.order;
-            itrlist.eligibility = request.body.itrlist.eligibility;
-            itrlist.student = request.body.itrlist.student;
-            itrlist.academicprogramcode = request.body.itrlist.academicprogramcode;
-            itrlist.save(function (error) {
+            itrprogram.order = request.body.itrprogram.order;
+            itrprogram.eligibility = request.body.itrprogram.eligibility;
+            itrprogram.student = request.body.itrprogram.student;
+            itrprogram.academicprogramcode = request.body.itrprogram.academicprogramcode;
+            itrprogram.save(function (error) {
                 if (error) {
                     response.send({error: error});
                 }
                 else {
-                    response.json({itrlist: itrlist});
+                    response.json({itrprogram: itrprogram});
                 }
             });
         }
     });
 })
-
+//ADDED - ACADEMICPROGRAMCODES
 app.route('/academicprogramcodes')
 .post(function (request, response) {
     var academicprogramcode = new AcademicprogramcodeModel(request.body.academicprogramcode);
     academicprogramcode.save(function (error) {
         if (error) response.send(error);
-        response.json({academicprogramcode: academicprogramcode});
+        response.json({academicprogramcode: academicprogramcodes});
     });
 })
 .get(function (request, response) {
-    var academicprogramcode = request.query.academicprogramcode;
-    if (!academicprogramcode) {
+    //var academicprogramcode = request.query.academicprogramcode;
+    var name = request.query.name;
+    if(name)
+    {
+        AcademicprogramcodeModel.find({"name":name}, function (error, academicprogramcodes) {
+            if (error) response.send(error);
+            response.json({academicprogramcode: academicprogramcodes});
+        });
+    }
+    else {
         AcademicprogramcodeModel.find(function (error, academicprogramcodes) {
             if (error) response.send(error);
             response.json({academicprogramcode: academicprogramcodes});
         });
     } 
 });
+//END ADDED - ACADEMICPROGRAMCODES
 
+//ADDED ALAN MARCh 23
+app.route('/academicprogramcodes/:academicprogramcode_id')
+.get(function (request, response) {
+    AcademicprogramcodeModel.findById(request.params.academicprogramcode_id, function (error, academicprogramcode) {
+        if (error) response.send(error);
+        response.json({academicprogramcode: academicprogramcode});
+    })
+})
+.put(function (request, response) {
+    AcademicprogramcodeModel.findById(request.params.academicprogramcode_id, function (error, academicprogramcode) {
+        if (error) {
+            response.send({error: error});
+        }
+        else {
+            academicprogramcode.name = request.body.academicprogramcode.name;
+            academicprogramcode.itrprogram = request.body.academicprogramcode.itrprogram;
+            academicprogramcode.admissionrule = request.body.academicprogramcode.admissionrule;
+            academicprogramcode.programadministrations = request.body.academicprogramcode.programadministrations;
+
+            academicprogramcode.save(function (error) {
+                if (error) {
+                    response.send({error: error});
+                }
+                else {
+                    response.json({academicprogramcode: academicprogramcode});
+                }
+            });
+        }
+    })
+})
+//END ADDED
+
+//ADDED - PROGRAMADMINISTRATIONS
 app.route('/programadministrations')
 .post(function (request, response) {
     var programadministration = new ProgramadministrationModel(request.body.programadministration);
@@ -1406,8 +2079,16 @@ app.route('/programadministrations')
 .get(function (request, response) {
     var programadministration = request.query.programadministration;
     var department = request.query.department;
+    var name = request.query.name;
+
     if(department){
         ProgramadministrationModel.find({"department":department}, function (error, programadministrations) {
+            if (error) response.send(error);
+            response.json({programadministration: programadministrations});
+        });
+    }
+    else if(name){
+        ProgramadministrationModel.find({"name":name}, function (error, programadministrations) {
             if (error) response.send(error);
             response.json({programadministration: programadministrations});
         });
@@ -1420,6 +2101,7 @@ app.route('/programadministrations')
     } 
 });
 
+// ADDED -- MM
 app.route('/programadministrations/:programadministration_id')
 .get(function (request, response) {
     ProgramadministrationModel.findById(request.params.programadministration_id, function (error, programadministration) {
@@ -1459,7 +2141,11 @@ app.route('/programadministrations/:programadministration_id')
         }
         );
 });
+// END ADDED -- MM
+//END ADDED - PROGRAMADMINISTRATIONS
 
+//ADDED - DEPARTMENTS
+// ADDED - MM
 app.route('/departments')
 .post(function (request, response) {
     var department = new DepartmentModel(request.body.department);
@@ -1471,8 +2157,16 @@ app.route('/departments')
 .get(function (request, response) {
     var department = request.query.department;
     var faculty = request.query.faculty;
-    if(faculty){
-        DepartmentModel.find({"faculty":faculty}, function (error, departments) {
+    var name = request.query.name;
+
+    if(name){
+        DepartmentModel.find({"name": name}, function (error, departments) {
+            if (error) response.send(error);
+            response.json({department: departments});
+        });
+    }
+    else if(faculty){
+        DepartmentModel.find({"faculty": faculty}, function (error, departments) {
             if (error) response.send(error);
             response.json({department: departments});
         });
@@ -1484,7 +2178,9 @@ app.route('/departments')
         });
     } 
 });
+// END ADDED -- MM
 
+// ADDED -- MM
 app.route('/departments/:department_id')
 .get(function (request, response) {
     DepartmentModel.findById(request.params.department_id, function (error, department) {
@@ -1524,7 +2220,10 @@ app.route('/departments/:department_id')
         }
         );
 });
+// END ADDED -- MM
+//END ADDED - DEPARTMENTS
 
+//ADDED - FACULTIES
 app.route('/faculties')
 .post(function (request, response) {
     var faculty = new FacultyModel(request.body.faculty);
@@ -1535,7 +2234,14 @@ app.route('/faculties')
 })
 .get(function (request, response) {
     var faculty = request.query.faculty;
-    if (!faculty) {
+    var name = request.query.name;
+    if(name){
+        FacultyModel.find({"name": name}, function (error, faculties) {
+            if (error) response.send(error);
+            response.json({faculty: faculties});
+        });
+    }
+    else{
         FacultyModel.find(function (error, faculties) {
             if (error) response.send(error);
             response.json({faculty: faculties});
@@ -1543,6 +2249,7 @@ app.route('/faculties')
     } 
 });
 
+// ADDED -- MM
 app.route('/faculties/:faculty_id')
 .get(function (request, response) {
     FacultyModel.findById(request.params.faculty_id, function (error, faculty) {
@@ -1583,7 +2290,10 @@ app.route('/faculties/:faculty_id')
         }
         );
 });
+// END ADDED -- MM
+//END ADDED - FACULTIES
 
+//ADDED - ADMISSIONRULES
 app.route('/admissionrules')
 .post(function (request, response) {
     var admissionrule = new AdmissionruleModel(request.body.admissionrule);
@@ -1602,6 +2312,7 @@ app.route('/admissionrules')
     } 
 });
 
+// ADDED -- MM
 app.route('/admissionrules/:admissionrule_id')
 .get(function (request, response) {
     AdmissionruleModel.findById(request.params.admissionrule_id, function (error, admissionrule) {
@@ -1641,7 +2352,11 @@ app.route('/admissionrules/:admissionrule_id')
         }
         );
 });
+// END ADDED -- MM
+//END ADDED - ADMISSIONRULES
 
+//ADDED - LOGICALEXPRESSIONS
+// ADDED -- MM
 app.route('/logicalexpressions')
 .post(function (request, response) {
     var logicalexpression = new LogicalexpressionModel(request.body.logicalexpression);
@@ -1666,7 +2381,9 @@ app.route('/logicalexpressions')
         });
     } 
 });
+// END ADDED -- MM
 
+// ADDED -- MM
 app.route('/logicalexpressions/:logicalexpression_id')
 .get(function (request, response) {
     LogicalexpressionModel.findById(request.params.logicalexpression_id, function (error, logicalexpression) {
@@ -1706,6 +2423,9 @@ app.route('/logicalexpressions/:logicalexpression_id')
         }
         );
 });
+// END ADDED -- MM
+
+//END ADDED - LOGICALEXPRESSIONS
 
 
 // ADDED MM
@@ -2220,7 +2940,7 @@ app.route('/basisofadmissioncodes')
 // END ADDED MM --> SYD'S SERVER FILE
 
 
+
 app.listen(7700, function () {
     console.log('Listening on port 7700');
 });
-
